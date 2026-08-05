@@ -234,3 +234,59 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Initialized an isolated database from the tracked seed and verified 1,380 scheduled cards across exactly 69 levels of 20.
 - Verified increasing complexity, a 14–73 score range, and the persisted level-1 starting state.
 - Prepared the validated phase for commit and merge into `main`.
+
+## 2026-08-05 — Expression database administration
+
+### Prompt
+
+> Create an admin interface where I can see, filter, search, order the expressions by level, complexity or more. Then we can edit these in a detailed form, add some status to them (translation and review process), add buttons to send to translation (to OpenAI or Gemini)... make it easy to admin the database, improve it over time, etc. and add new items to it...
+
+### Summary
+
+- Added a searchable, filterable, sortable, paginated administrative expression index.
+- Added detailed editing and new-expression forms with source, category, private notes, translation status, and editorial-review status.
+- Migrated all records into an editorial workflow, recognizing 961 translated and 419 missing records.
+- Added structured AI translation drafts through Vercel AI Gateway using current OpenAI and Gemini models.
+- Ensured generated text is stored as a draft requiring human review and records which model produced it.
+- Added automatic complexity recalculation and level rebalancing after administrative edits or additions.
+- Verified production compilation and live HTTP rendering for the list, editor, and creation routes.
+
+## 2026-08-05 — Environment templates
+
+### Prompt
+
+> Can you create a documented .env.local and .env.example files
+
+### Summary
+
+- Added a tracked `.env.example` documenting AI Gateway authentication and optional SQLite placement.
+- Added an ignored `.env.local` ready for machine-local secrets.
+- Updated setup instructions to copy the example before starting development.
+
+## 2026-08-05 — Remembered faceted filters
+
+### Prompt
+
+> Memorize the filters and sort, update the values in sources based on the current filters, add a Clear filter button
+
+### Summary
+
+- Persisted the admin filter and sorting query in browser storage and restore it when returning to the admin index.
+- Kept URL parameters authoritative so filtered views remain bookmarkable and shareable.
+- Recalculated source counts against the active search, level, translation, and review criteria while excluding the source facet itself.
+- Added a Clear control that resets both the URL and remembered filter state.
+
+## 2026-08-05 — Admin phase validation
+
+### Prompt
+
+> validate phase
+
+### Summary
+
+- Created the `feat/admin-expression-workflow` validation branch.
+- Passed ESLint, standalone TypeScript checking, whitespace validation, and a production webpack build.
+- Initialized a fresh isolated SQLite database and verified 1,380 expressions across 5 sources and 69 levels.
+- Verified the editorial migration produces 961 translated, 419 missing, and 1,380 unreviewed records.
+- Found and fixed a parallel initialization race by serializing migrations, seeding, scoring, and level assignment with a bounded SQLite busy timeout.
+- Prepared the validated admin phase for commit and merge into `main`.
