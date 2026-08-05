@@ -365,8 +365,12 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 > Can you display a progression bar?
 
+### Follow-up
+
+> I'd like a percentage instead...
+
 ### Summary
 
-- Added an accessible indeterminate progress bar to the batch translation toolbar while the Server Action is processing.
-- Added reduced-motion behavior for the progress animation.
-- The bar intentionally communicates active work without pretending to know an exact completion percentage across provider requests.
+- Added per-expression server actions so the client can track completed translation requests.
+- Replaced the indeterminate indicator with an accessible determinate counter such as `17/50 · 34%`.
+- Kept three-at-a-time processing and partial-failure reporting while the percentage advances after each completed request.

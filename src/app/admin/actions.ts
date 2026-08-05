@@ -106,6 +106,19 @@ export async function translateExpressionsAction(formData: FormData) {
   redirect(withBatchResult(returnTo, translated, failed));
 }
 
+export async function translateOneExpressionAction(id: number, provider: TranslationProvider) {
+  if (provider !== "openai" && provider !== "gemini") return { ok: false, error: "Invalid AI provider" };
+  const phrase = getExpression(id);
+  if (!phrase) return { ok: false, error: "Expression not found" };
+  try {
+    const draft = await generateTranslationDraft(phrase.icelandic, provider);
+    updateTranslationDraft(id, draft, draft.model);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message.slice(0, 180) : "Translation failed" };
+  }
+}
+
 function withBatchResult(returnTo: string, translated: number, failed: number, error?: string) {
   const [pathname, query = ""] = returnTo.split("?");
   const params = new URLSearchParams(query);

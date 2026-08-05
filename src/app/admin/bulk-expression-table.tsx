@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useFormStatus } from "react-dom";
-import { translateExpressionsAction } from "./actions";
+import { useRouter } from "next/navigation";
+import { translateExpressionsAction, translateOneExpressionAction } from "./actions";
 import type { Phrase } from "@/lib/db";
 
 const selectionLimit = 50;
 
 export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; returnTo: string }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [pendingProvider, setPendingProvider] = useState<"openai" | "gemini" | null>(null);
+  const [completed, setCompleted] = useState(0);
+  const [failed, setFailed] = useState(0);
   const selectableCount = Math.min(phrases.length, selectionLimit);
   const selectedVisibleCount = phrases.filter((phrase) => selected.has(phrase.id)).length;
   const allVisibleSelected = selectableCount > 0 && selectedVisibleCount === selectableCount;
@@ -28,6 +32,30 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
     setSelected(new Set(phrases.slice(0, selectionLimit).map((phrase) => phrase.id)));
   }
 
+  async function startBatch(provider: "openai" | "gemini") {
+    if (pendingProvider || !selected.size) return;
+    setPendingProvider(provider);
+    setCompleted(0);
+    setFailed(0);
+    const ids = [...selected];
+    let translated = 0;
+    let errors = 0;
+    for (let offset = 0; offset < ids.length; offset += 3) {
+      const group = ids.slice(offset, offset + 3);
+      const results = await Promise.all(group.map((id) => translateOneExpressionAction(id, provider)));
+      translated += results.filter((result) => result.ok).length;
+      errors += results.filter((result) => !result.ok).length;
+      setCompleted((count) => count + results.length);
+      setFailed(errors);
+    }
+    const [pathname, query = ""] = returnTo.split("?");
+    const params = new URLSearchParams(query);
+    params.set("batchTranslated", String(translated));
+    params.set("batchFailed", String(errors));
+    setPendingProvider(null);
+    router.replace(`${pathname}?${params.toString()}`);
+  }
+
   return (
     <form action={translateExpressionsAction}>
       <input type="hidden" name="returnTo" value={returnTo} />
@@ -44,22 +72,20 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
       </div>
       {selected.size > 0 && <div className="relative sticky bottom-4 z-10 mx-4 mb-4 mt-3 flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl bg-[#15292d] px-5 py-4 text-white shadow-[0_16px_45px_rgba(21,41,45,.28)]">
         <div><p className="font-semibold">{selected.size} expression{selected.size === 1 ? "" : "s"} selected</p><p className="mono mt-1 text-[9px] uppercase tracking-[.12em] text-white/45">Saved as drafts · human review required · maximum {selectionLimit}</p></div>
-        <div className="flex flex-wrap items-center gap-2"><button type="button" onClick={() => setSelected(new Set())} className="rounded-xl px-4 py-2 text-sm text-white/65 hover:bg-white/10 hover:text-white">Clear</button><TranslateButton provider="openai">Translate with OpenAI</TranslateButton><TranslateButton provider="gemini">Translate with Gemini</TranslateButton></div>
-        <BatchProgress count={selected.size} />
+        <div className="flex flex-wrap items-center gap-2"><button type="button" disabled={Boolean(pendingProvider)} onClick={() => setSelected(new Set())} className="rounded-xl px-4 py-2 text-sm text-white/65 hover:bg-white/10 hover:text-white disabled:opacity-40">Clear</button><TranslateButton provider="openai" pending={pendingProvider === "openai"} disabled={Boolean(pendingProvider)} onTranslate={() => startBatch("openai")}>Translate with OpenAI</TranslateButton><TranslateButton provider="gemini" pending={pendingProvider === "gemini"} disabled={Boolean(pendingProvider)} onTranslate={() => startBatch("gemini")}>Translate with Gemini</TranslateButton></div>
+        {pendingProvider && <BatchProgress count={selected.size} completed={completed} failed={failed} />}
       </div>}
     </form>
   );
 }
 
-function TranslateButton({ provider, children }: { provider: "openai" | "gemini"; children: React.ReactNode }) {
-  const { pending } = useFormStatus();
-  return <button type="submit" name="provider" value={provider} disabled={pending} onClick={(event) => { if (!window.confirm(`Generate new ${provider === "openai" ? "OpenAI" : "Gemini"} drafts for the selected expressions? Existing English text will be replaced.`)) event.preventDefault(); }} className="rounded-xl bg-[#b7d86a] px-4 py-2 text-sm font-semibold text-[#15292d] hover:bg-[#c6e57c] disabled:cursor-wait disabled:opacity-50">{pending ? "Translating…" : children}</button>;
+function TranslateButton({ provider, children, pending, disabled, onTranslate }: { provider: "openai" | "gemini"; children: React.ReactNode; pending: boolean; disabled: boolean; onTranslate: () => void }) {
+  return <button type="button" disabled={disabled} onClick={() => { if (window.confirm(`Generate new ${provider === "openai" ? "OpenAI" : "Gemini"} drafts for the selected expressions? Existing English text will be replaced.`)) onTranslate(); }} className="rounded-xl bg-[#b7d86a] px-4 py-2 text-sm font-semibold text-[#15292d] hover:bg-[#c6e57c] disabled:cursor-wait disabled:opacity-50">{pending ? "Translating…" : children}</button>;
 }
 
-function BatchProgress({ count }: { count: number }) {
-  const { pending } = useFormStatus();
-  if (!pending) return null;
-  return <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10" role="progressbar" aria-label={`Translating ${count} selected expressions`} aria-valuetext="Translation in progress"><div className="progress-sweep h-full w-1/3 rounded-full bg-[#b7d86a]" /></div>;
+function BatchProgress({ count, completed, failed }: { count: number; completed: number; failed: number }) {
+  const percent = Math.round((completed / count) * 100);
+  return <div className="absolute inset-x-0 bottom-0 h-8 bg-white/10 px-5" role="progressbar" aria-label={`Translating ${count} selected expressions`} aria-valuemin={0} aria-valuemax={count} aria-valuenow={completed}><div className="flex h-full items-center gap-3"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#b7d86a] transition-[width] duration-300" style={{ width: `${percent}%` }} /></div><span className="mono min-w-20 text-right text-[10px] text-white/60">{completed}/{count} · {percent}%{failed ? ` · ${failed} failed` : ""}</span></div></div>;
 }
 
 function Status({ value }: { value: string }) { const active = value === "approved" || value === "reviewed"; const attention = value === "needs_review" || value === "draft"; return <span className={`mono inline-flex rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[.1em] ${active ? "bg-[#b7d86a]/35 text-[#1d4d58]" : attention ? "bg-amber-100 text-amber-800" : "bg-[#78979c]/10 text-[#78979c]"}`}>{value.replace("_", " ")}</span>; }
