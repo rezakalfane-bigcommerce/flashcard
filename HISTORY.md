@@ -444,3 +444,14 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Added an Icelandic audio upload field to the admin expression editor, including preview, replacement, and removal.
 - Added an `audio_url` SQLite column and local `public/audio/` storage with format and 15 MB size validation.
 - Added a Listen/Pause control to flash cards when a pronunciation recording exists.
+
+## 2026-08-05 — Audio controls in expression list
+
+### Prompt
+
+> Add a little play button in the list view on the left of the expression
+
+### Summary
+
+- Added a compact play/pause button immediately before expressions with audio in the admin list.
+- Playback remains independent from selecting records or opening the editor.

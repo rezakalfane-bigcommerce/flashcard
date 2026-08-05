@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { translateExpressionsAction, translateOneExpressionAction } from "./actions";
 import type { Phrase } from "@/lib/db";
@@ -74,7 +74,7 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
           <tbody>{phrases.map((phrase) => {
             const checked = selected.has(phrase.id);
             const disabled = !checked && selected.size >= selectionLimit;
-            return <tr key={phrase.id} className={`border-t border-[#1d4d58]/10 align-top hover:bg-[#d9eeec]/35 ${checked ? "bg-[#b7d86a]/10" : ""}`}><td className="px-5 py-4"><input type="checkbox" aria-label={`Select ${phrase.icelandic}`} checked={checked} disabled={disabled} onChange={() => toggle(phrase.id)} className="h-4 w-4 accent-[#1d4d58] disabled:opacity-30" /></td><td className="display max-w-sm px-2 py-4 text-lg font-medium">{phrase.icelandic}</td><td className="max-w-sm px-4 py-4 text-[#1d4d58]/75">{phrase.meaning || <span className="italic text-[#78979c]">Not translated</span>}</td><td className="mono px-4 py-4 text-xs">{phrase.level}</td><td className="mono px-4 py-4 text-xs">{phrase.complexity}</td><td className="px-4 py-4 text-xs">{phrase.source}</td><td className="px-4 py-4"><Status value={phrase.translationStatus} /></td><td className="px-4 py-4"><Status value={phrase.reviewStatus} /></td><td className="px-4 py-4 text-right"><Link href={`/admin/${phrase.id}`} className="font-semibold text-[#1d4d58] underline decoration-[#b7d86a] decoration-2 underline-offset-4">Edit</Link></td></tr>;
+            return <tr key={phrase.id} className={`border-t border-[#1d4d58]/10 align-top hover:bg-[#d9eeec]/35 ${checked ? "bg-[#b7d86a]/10" : ""}`}><td className="px-5 py-4"><input type="checkbox" aria-label={`Select ${phrase.icelandic}`} checked={checked} disabled={disabled} onChange={() => toggle(phrase.id)} className="h-4 w-4 accent-[#1d4d58] disabled:opacity-30" /></td><td className="display max-w-sm px-2 py-4 text-lg font-medium"><div className="flex items-center gap-2">{phrase.audioUrl && <ListAudioButton audioUrl={phrase.audioUrl} phrase={phrase.icelandic} />}<span>{phrase.icelandic}</span></div></td><td className="max-w-sm px-4 py-4 text-[#1d4d58]/75">{phrase.meaning || <span className="italic text-[#78979c]">Not translated</span>}</td><td className="mono px-4 py-4 text-xs">{phrase.level}</td><td className="mono px-4 py-4 text-xs">{phrase.complexity}</td><td className="px-4 py-4 text-xs">{phrase.source}</td><td className="px-4 py-4"><Status value={phrase.translationStatus} /></td><td className="px-4 py-4"><Status value={phrase.reviewStatus} /></td><td className="px-4 py-4 text-right"><Link href={`/admin/${phrase.id}`} className="font-semibold text-[#1d4d58] underline decoration-[#b7d86a] decoration-2 underline-offset-4">Edit</Link></td></tr>;
           })}</tbody>
         </table>
       </div>
@@ -111,3 +111,15 @@ function BatchProgress({ count, completed, failed }: { count: number; completed:
 }
 
 function Status({ value }: { value: string }) { const active = value === "approved" || value === "reviewed"; const attention = value === "needs_review" || value === "draft" || value === "partly_missing"; return <span className={`mono inline-flex rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[.1em] ${active ? "bg-[#b7d86a]/35 text-[#1d4d58]" : attention ? "bg-amber-100 text-amber-800" : "bg-[#78979c]/10 text-[#78979c]"}`}>{value.replace("_", " ")}</span>; }
+
+function ListAudioButton({ audioUrl, phrase }: { audioUrl: string; phrase: string }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  function toggle() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) void audio.play();
+    else audio.pause();
+  }
+  return <><button type="button" onClick={toggle} aria-label={`${playing ? "Pause" : "Play"} Icelandic audio for ${phrase}`} title={playing ? "Pause pronunciation" : "Play pronunciation"} className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#1d4d58]/20 bg-[#d9eeec] text-[10px] text-[#1d4d58] transition hover:bg-[#b7d86a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b7d86a]">{playing ? "Ⅱ" : "▶"}</button><audio ref={audioRef} src={audioUrl} preload="metadata" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} /></>;
+}
