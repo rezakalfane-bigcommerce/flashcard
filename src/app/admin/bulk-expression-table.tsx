@@ -42,9 +42,10 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
           })}</tbody>
         </table>
       </div>
-      {selected.size > 0 && <div className="sticky bottom-4 z-10 mx-4 mb-4 mt-3 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#15292d] px-5 py-4 text-white shadow-[0_16px_45px_rgba(21,41,45,.28)]">
+      {selected.size > 0 && <div className="relative sticky bottom-4 z-10 mx-4 mb-4 mt-3 flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl bg-[#15292d] px-5 py-4 text-white shadow-[0_16px_45px_rgba(21,41,45,.28)]">
         <div><p className="font-semibold">{selected.size} expression{selected.size === 1 ? "" : "s"} selected</p><p className="mono mt-1 text-[9px] uppercase tracking-[.12em] text-white/45">Saved as drafts · human review required · maximum {selectionLimit}</p></div>
         <div className="flex flex-wrap items-center gap-2"><button type="button" onClick={() => setSelected(new Set())} className="rounded-xl px-4 py-2 text-sm text-white/65 hover:bg-white/10 hover:text-white">Clear</button><TranslateButton provider="openai">Translate with OpenAI</TranslateButton><TranslateButton provider="gemini">Translate with Gemini</TranslateButton></div>
+        <BatchProgress count={selected.size} />
       </div>}
     </form>
   );
@@ -53,6 +54,12 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
 function TranslateButton({ provider, children }: { provider: "openai" | "gemini"; children: React.ReactNode }) {
   const { pending } = useFormStatus();
   return <button type="submit" name="provider" value={provider} disabled={pending} onClick={(event) => { if (!window.confirm(`Generate new ${provider === "openai" ? "OpenAI" : "Gemini"} drafts for the selected expressions? Existing English text will be replaced.`)) event.preventDefault(); }} className="rounded-xl bg-[#b7d86a] px-4 py-2 text-sm font-semibold text-[#15292d] hover:bg-[#c6e57c] disabled:cursor-wait disabled:opacity-50">{pending ? "Translating…" : children}</button>;
+}
+
+function BatchProgress({ count }: { count: number }) {
+  const { pending } = useFormStatus();
+  if (!pending) return null;
+  return <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10" role="progressbar" aria-label={`Translating ${count} selected expressions`} aria-valuetext="Translation in progress"><div className="progress-sweep h-full w-1/3 rounded-full bg-[#b7d86a]" /></div>;
 }
 
 function Status({ value }: { value: string }) { const active = value === "approved" || value === "reviewed"; const attention = value === "needs_review" || value === "draft"; return <span className={`mono inline-flex rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[.1em] ${active ? "bg-[#b7d86a]/35 text-[#1d4d58]" : attention ? "bg-amber-100 text-amber-800" : "bg-[#78979c]/10 text-[#78979c]"}`}>{value.replace("_", " ")}</span>; }

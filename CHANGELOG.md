@@ -100,3 +100,8 @@ All notable changes and repository commits are documented here. This project fol
 
 - Adds `npm run phrases:backup` to create timestamped backups under `data/backup/`.
 - Verifies the initial backup with SQLite integrity and collection-count checks; local backup files remain ignored by Git.
+
+### `fix: show batch translation progress`
+
+- Adds an accessible animated progress indicator while selected expressions are being translated.
+- Respects reduced-motion preferences and labels the bar as indeterminate because provider work completes asynchronously.

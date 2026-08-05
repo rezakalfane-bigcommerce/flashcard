@@ -358,3 +358,15 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Verified `PRAGMA integrity_check` returns `ok` and the backup contains 1,380 expressions, 5 sources, and 69 levels.
 - Added `npm run phrases:backup` for repeatable timestamped backups.
 - Ignored backup database and WAL files so local backups are not accidentally committed.
+
+## 2026-08-05 — Batch translation progress
+
+### Prompt
+
+> Can you display a progression bar?
+
+### Summary
+
+- Added an accessible indeterminate progress bar to the batch translation toolbar while the Server Action is processing.
+- Added reduced-motion behavior for the progress animation.
+- The bar intentionally communicates active work without pretending to know an exact completion percentage across provider requests.

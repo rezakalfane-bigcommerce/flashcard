@@ -33,7 +33,9 @@ button { cursor: pointer; }
 .card-inner.flipped { transform: rotateY(180deg); }
 .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .card-back { transform: rotateY(180deg); }
+.progress-sweep { animation: progress-sweep 1.3s ease-in-out infinite; }
+@keyframes progress-sweep { 0% { transform: translateX(-120%); } 100% { transform: translateX(420%); } }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
