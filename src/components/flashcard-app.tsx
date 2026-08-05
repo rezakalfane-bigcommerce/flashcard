@@ -1,9 +1,28 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { addPhrase, saveReview } from "@/app/actions";
+import { addPhrase, changeLevel, saveReview } from "@/app/actions";
 import type { DashboardData } from "@/lib/db";
 import { useRouter } from "next/navigation";
+
+function pickWeightedIndex(phrases: DashboardData["phrases"], excludeId = -1) {
+  const now = Date.now();
+  const alternatives = phrases.map((phrase, index) => ({ phrase, index })).filter(({ phrase }) => phrase.id !== excludeId);
+  const due = alternatives.filter(({ phrase }) => !phrase.nextReviewAt || new Date(phrase.nextReviewAt).getTime() <= now);
+  const pool = due.length > 0 ? due : alternatives;
+  if (pool.length === 0) return 0;
+
+  const weighted = pool.map((item) => ({
+    ...item,
+    weight: 1 + (item.phrase.complexity / 100) * 0.6 + Math.max(0, 5 - item.phrase.mastery) * 0.35,
+  }));
+  let target = Math.random() * weighted.reduce((sum, item) => sum + item.weight, 0);
+  for (const item of weighted) {
+    target -= item.weight;
+    if (target <= 0) return item.index;
+  }
+  return weighted.at(-1)?.index ?? 0;
+}
 
 export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
   const router = useRouter();
@@ -29,7 +48,15 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
     startTransition(async () => {
       await saveReview(phrase.id, remembered);
       setFlipped(false);
-      setIndex((value) => (value + 1) % initialData.phrases.length);
+      setIndex(pickWeightedIndex(initialData.phrases, phrase.id));
+      router.refresh();
+    });
+  }
+
+  function goToLevel(level: number) {
+    if (isPending) return;
+    startTransition(async () => {
+      await changeLevel(level);
       router.refresh();
     });
   }
@@ -53,7 +80,14 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
               <p className="mono mb-2 text-[10px] uppercase tracking-[.24em] text-[#78979c]">Today’s practice</p>
               <h1 className="display text-4xl leading-none sm:text-5xl">Say it out loud.</h1>
             </div>
-            <span className="mono text-xs text-[#78979c]">{String(index + 1).padStart(2, "0")} / {String(initialData.phrases.length).padStart(2, "0")}</span>
+            <div className="text-right">
+              <div className="flex items-center justify-end gap-2">
+                <button type="button" aria-label="Previous level" title="Previous level (testing)" onClick={() => goToLevel(initialData.study.currentLevel - 1)} disabled={isPending || initialData.study.currentLevel === 1} className="grid h-8 w-8 place-items-center rounded-full border border-[#1d4d58]/20 text-[#1d4d58] transition hover:bg-[#d9eeec] disabled:cursor-not-allowed disabled:opacity-30">←</button>
+                <span className="mono text-xs font-semibold text-[#1d4d58]">Level {String(initialData.study.currentLevel).padStart(2, "0")} / {String(initialData.study.totalLevels).padStart(2, "0")}</span>
+                <button type="button" aria-label="Next level" title="Next level (testing)" onClick={() => goToLevel(initialData.study.currentLevel + 1)} disabled={isPending || initialData.study.currentLevel === initialData.study.totalLevels} className="grid h-8 w-8 place-items-center rounded-full border border-[#1d4d58]/20 text-[#1d4d58] transition hover:bg-[#d9eeec] disabled:cursor-not-allowed disabled:opacity-30">→</button>
+              </div>
+              <span className="mt-1 block text-xs text-[#78979c]">{initialData.study.levelMastered} of 20 progressing · testing controls</span>
+            </div>
           </div>
 
           {phrase && (
@@ -61,8 +95,11 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
               <button onClick={() => setFlipped(!flipped)} aria-label={flipped ? "Show Icelandic phrase" : "Reveal translation"} className={`card-inner relative h-full w-full text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b7d86a] ${flipped ? "flipped" : ""}`}>
                 <article className="card-face absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[2rem] bg-[#1d4d58] p-8 text-white shadow-[0_25px_70px_-28px_rgba(21,41,45,.7)] sm:p-12">
                   <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full border-[55px] border-[#b7d86a]/20" />
-                  <div className="flex items-center justify-between">
-                    <span className="mono rounded-full border border-white/20 px-3 py-1 text-[10px] uppercase tracking-[.2em]">{phrase.category}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="mono rounded-full border border-white/20 px-3 py-1 text-[10px] uppercase tracking-[.2em]">{phrase.category}</span>
+                      <span className="mono rounded-full bg-white/10 px-3 py-1 text-[10px] uppercase tracking-[.14em] text-[#d9eeec]">Complexity · {phrase.complexity}</span>
+                    </div>
                     <span className="mono text-[10px] tracking-widest text-white/50">ÍS → EN</span>
                   </div>
                   <h2 className="display relative max-w-2xl text-5xl font-medium leading-[1.03] sm:text-7xl">{phrase.icelandic}</h2>
@@ -72,9 +109,10 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
                   </div>
                 </article>
                 <article className="card-face card-back absolute inset-0 flex flex-col justify-between rounded-[2rem] border border-[#1d4d58]/15 bg-[#d9eeec] p-8 shadow-[0_25px_70px_-28px_rgba(21,41,45,.4)] sm:p-12">
-                  <div className="flex items-center justify-between"><span className="mono text-[10px] uppercase tracking-[.2em] text-[#1d4d58]">English notes</span><span className="mono rounded-full border border-[#1d4d58]/15 px-2.5 py-1 text-[9px] uppercase tracking-[.14em] text-[#78979c]">Source · {phrase.source}</span></div>
-                  <div className="space-y-5">
-                    <div><p className="mono text-[9px] uppercase tracking-[.18em] text-[#78979c]">Meaning</p><p className="display mt-1 text-3xl leading-tight text-[#15292d] sm:text-4xl">{phrase.meaning}</p></div>
+                  <div className="flex items-center justify-between gap-3"><span className="mono text-[10px] uppercase tracking-[.2em] text-[#1d4d58]">English notes</span><div className="flex flex-wrap justify-end gap-2"><span className="mono rounded-full border border-[#1d4d58]/15 px-2.5 py-1 text-[9px] uppercase tracking-[.14em] text-[#78979c]">Complexity · {phrase.complexity}</span><span className="mono rounded-full border border-[#1d4d58]/15 px-2.5 py-1 text-[9px] uppercase tracking-[.14em] text-[#78979c]">Source · {phrase.source}</span></div></div>
+                  <div className="space-y-4">
+                    <div><p className="mono text-[9px] uppercase tracking-[.18em] text-[#78979c]">Icelandic</p><p lang="is" className="display mt-1 text-xl font-medium leading-tight text-[#1d4d58] sm:text-2xl">{phrase.icelandic}</p></div>
+                    <div><p className="mono text-[9px] uppercase tracking-[.18em] text-[#78979c]">Meaning</p><p className="display mt-1 text-3xl leading-tight text-[#15292d] sm:text-4xl">{phrase.meaning || "Translation not added yet"}</p></div>
                     <div><p className="mono text-[9px] uppercase tracking-[.18em] text-[#78979c]">Literal</p><p className="mt-1 text-sm font-semibold text-[#1d4d58]">{phrase.literal || "—"}</p></div>
                     <div><p className="mono text-[9px] uppercase tracking-[.18em] text-[#78979c]">Why</p><p className="mt-1 line-clamp-3 text-sm leading-5 text-[#1d4d58]/75">{phrase.why || "—"}</p></div>
                   </div>

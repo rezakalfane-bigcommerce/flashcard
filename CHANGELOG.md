@@ -17,6 +17,7 @@ All notable changes and repository commits are documented here. This project fol
 - Transactional `phrases:import` command for the supplied four-column TSV format.
 - Phrase source attribution across SQLite, imports, card details, and manual entry.
 - Tracked 1,380-card JSON seed dataset for reproducible database initialization.
+- Stored 1–100 expression complexity scores for future balanced pack generation.
 
 ### Changed
 
@@ -25,6 +26,11 @@ All notable changes and repository commits are documented here. This project fol
 - Extended `.gitignore` to exclude local SQLite database and WAL files.
 - Redesigned card backs and the phrase form around the richer expression dataset.
 - Defaulted the current expression collection to the `Tilvitnun` source while allowing future import-specific sources.
+- Card backs now show the Icelandic expression directly above its English meaning for bilingual reference.
+- Both sides of each card now display its stored complexity score.
+- Expressions are organized into 69 persisted complexity levels of exactly 20 cards.
+- Study sessions use weighted random spaced repetition and automatic level progression.
+- Added temporary bounded previous/next level navigation for testing.
 
 ### Dependencies
 
@@ -53,3 +59,8 @@ All notable changes and repository commits are documented here. This project fol
 
 - Implements the complete application and the sourced 1,380-card seed collection described under **Unreleased**.
 - Validated with ESLint, TypeScript, a production build, and isolated fresh-database initialization.
+
+### `feat: add complexity levels and spaced repetition`
+
+- Adds bilingual card details, persisted complexity scoring, 69 study levels, weighted spaced repetition, automatic progression, and temporary level navigation.
+- Validated against a fresh 1,380-card database with exact level sizes and monotonic complexity ordering.

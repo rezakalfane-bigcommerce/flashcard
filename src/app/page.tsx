@@ -6,5 +6,5 @@ export const dynamic = "force-dynamic";
 export default function Home() {
   const data = getDashboardData();
 
-  return <FlashcardApp initialData={data} />;
+  return <FlashcardApp key={data.study.currentLevel} initialData={data} />;
 }
