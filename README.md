@@ -45,9 +45,34 @@ npm start
 1. Read the Icelandic phrase aloud.
 2. Click the card or press Space to reveal its meaning.
 3. Choose **Still learning** or **I remembered**.
-4. The app updates the card's mastery score and advances to the next phrase.
+4. The app schedules the next review and selects another expression from the active level.
 
 Mastery ranges from 0 to 5. A remembered response adds one; a still-learning response subtracts one without going below zero. Cards at level 4 or higher count as mastered.
+
+## Levels and spaced repetition
+
+The 1,380 expressions are sorted by complexity and stored in 69 levels of exactly 20 cards. Level 1 starts with the simplest expressions; each subsequent level becomes progressively more complex. A new learner starts at level 1, and the current level is persisted in SQLite.
+
+Within a level, selection is random and weighted:
+
+- Cards whose review time has arrived are selected before cards scheduled for later.
+- Lower-mastery cards receive extra weight.
+- More complex cards receive a modest frequency boost of up to 60%.
+- The card just reviewed is excluded when another card is available.
+
+Successful reviews use expanding intervals of 10 minutes, 1 day, 3 days, 7 days, 14 days, and 30 days. A missed card returns after 2 minutes and resets its correct-answer streak. The next level unlocks automatically after all 20 cards in the active level reach mastery 2.
+
+## Complexity scoring
+
+Every expression has a deterministic complexity score from 1–100 stored in SQLite. This supports future creation of balanced study packs without conflating linguistic complexity with a learner's mastery.
+
+- Word count is the main factor and contributes up to 65 points.
+- Average word length contributes up to 16 points.
+- The proportion of long words (nine or more characters) contributes up to 10 points.
+- Total character count contributes up to 5 points.
+- Slashes and parenthetical variants contribute up to 4 points.
+
+Scores are recalculated when the database opens, assigned when a phrase is added, and included by the TSV importer. The formula lives in `src/lib/complexity.ts`.
 
 ## Project structure
 

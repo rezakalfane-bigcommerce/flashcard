@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createPhrase, reviewPhrase } from "@/lib/db";
+import { createPhrase, reviewPhrase, setStudyLevel } from "@/lib/db";
 
 export async function addPhrase(formData: FormData) {
   const icelandic = String(formData.get("icelandic") ?? "").trim();
@@ -21,5 +21,10 @@ export async function addPhrase(formData: FormData) {
 
 export async function saveReview(id: number, remembered: boolean) {
   reviewPhrase(id, remembered);
+  revalidatePath("/");
+}
+
+export async function changeLevel(level: number) {
+  setStudyLevel(level);
   revalidatePath("/");
 }

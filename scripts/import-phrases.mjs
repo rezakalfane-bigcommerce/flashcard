@@ -20,6 +20,23 @@ const rows = lines.map((line, lineIndex) => {
   return Object.fromEntries(headers.map((header, index) => [header, values[index]?.trim() ?? ""]));
 });
 
+function calculateComplexity(expression) {
+  const words = expression.match(/[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*/gu) ?? [];
+  if (!words.length) return 1;
+  const lengths = words.map((word) => Array.from(word).length);
+  const averageLength = lengths.reduce((sum, length) => sum + length, 0) / words.length;
+  const longWordRatio = lengths.filter((length) => length >= 9).length / words.length;
+  const letterCount = lengths.reduce((sum, length) => sum + length, 0);
+  const variants = (expression.match(/[()/]/g) ?? []).length;
+  return Math.max(1, Math.min(100, Math.round(
+    Math.min(65, words.length * 7) +
+    Math.min(16, Math.max(0, averageLength - 4) * 3) +
+    longWordRatio * 10 +
+    Math.min(5, Math.max(0, letterCount - 30) / 8) +
+    Math.min(4, variants),
+  )));
+}
+
 const dataDir = path.join(process.cwd(), "data");
 fs.mkdirSync(dataDir, { recursive: true });
 const db = new Database(path.join(dataDir, "phrases.db"));
@@ -27,8 +44,8 @@ const columns = db.prepare("PRAGMA table_info(phrases)").all();
 if (!columns.length) throw new Error("Open the app once before importing so the database schema is created.");
 
 const insert = db.prepare(`
-  INSERT INTO phrases (icelandic, english, pronunciation, meaning, literal, why, source, category)
-  VALUES (?, ?, '', ?, ?, ?, ?, 'Expressions')
+  INSERT INTO phrases (icelandic, english, pronunciation, meaning, literal, why, source, category, complexity)
+  VALUES (?, ?, '', ?, ?, ?, ?, 'Expressions', ?)
 `);
 const defaultSource = process.argv[3] || "Tilvitnun";
 const importRows = db.transaction(() => {
@@ -41,6 +58,7 @@ const importRows = db.transaction(() => {
       row.Literal_EN,
       row["The_Why (Etymology/Context)"],
       row.Source || defaultSource,
+      calculateComplexity(row.Phrase_IS),
     );
   }
 });

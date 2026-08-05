@@ -157,3 +157,80 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Passed ESLint, TypeScript, a webpack production build, and fresh SQLite initialization with the exact five-source totals.
 - Prepared the feature branch for commit and merge into `main`.
 - Found no configured Git remote, so pushing requires a repository remote URL.
+
+## 2026-08-05 — Bilingual card back
+
+### Prompt
+
+> can you show the icelandic expression above the meaning, so we can see both icelandic and english?
+
+### Summary
+
+- Added the Icelandic expression above the English meaning on the reverse of every card.
+- Kept the English meaning as the dominant typographic element while clearly labeling both languages.
+- Added a helpful fallback for cards whose English translation has not yet been supplied.
+
+## 2026-08-05 — Expression complexity scoring
+
+### Prompt
+
+> Is it possible to calculate some "Complexity" score based on the number of words (main criteria), then complexity/length of words, any other criteria? Save that to databse for future packing of expressions
+
+### Summary
+
+- Added a deterministic 1–100 complexity score with word count as the primary factor.
+- Added secondary weighting for average word length, long compounds, total characters, and structural variants.
+- Added the SQLite column and automatic backfill for the complete collection.
+- Integrated scoring into fresh seeds, manual phrase creation, and TSV imports.
+- Documented the formula separately from learner mastery for future pack-building logic.
+
+## 2026-08-05 — Visible complexity score
+
+### Prompt
+
+> Can you display the score in the card ?
+
+### Summary
+
+- Added a compact complexity badge to both sides of every flash card.
+- Kept the score in the card header so it remains visible without competing with the phrase content.
+
+## 2026-08-05 — Complexity levels and spaced repetition
+
+### Prompt
+
+> Spread the expressions into buckets of 20 expressions that match "levels" (from level 1 to 69), that are more and more complex (use complexity level of expressions). User starts at level 1, display level, rotate randomly through the 20 expressions (Spaced repetition so expressions are reviewed at the right intervals, most complex appear a bit more frequently)
+
+### Summary
+
+- Ranked all 1,380 expressions by complexity and persisted exactly 69 levels of 20 cards.
+- Added persistent study state beginning at level 1 and displayed the active level and progress.
+- Added weighted random selection prioritizing due, low-mastery, and slightly more complex cards.
+- Added expanding review intervals, short retry intervals, correct-answer streaks, and automatic progression after all 20 cards reach mastery 2.
+- Verified exact bucket sizes and increasing complexity from the first through the final level.
+
+## 2026-08-05 — Temporary level navigation
+
+### Prompt
+
+> Add extra buttons to navigate the different levels (will be removed later, just for testing)
+
+### Summary
+
+- Added temporary previous and next controls beside the active level indicator.
+- Persisted test navigation through a bounded Server Action so levels remain between 1 and 69.
+- Disabled navigation at the first and final levels and labeled the controls for later removal.
+
+## 2026-08-05 — Learning-system phase validation
+
+### Prompt
+
+> Validate phase
+
+### Summary
+
+- Created the `feat/complexity-levels-spaced-repetition` branch.
+- Passed ESLint, standalone TypeScript checking, import-script syntax checking, whitespace validation, and a production webpack build.
+- Initialized an isolated database from the tracked seed and verified 1,380 scheduled cards across exactly 69 levels of 20.
+- Verified increasing complexity, a 14–73 score range, and the persisted level-1 starting state.
+- Prepared the validated phase for commit and merge into `main`.
