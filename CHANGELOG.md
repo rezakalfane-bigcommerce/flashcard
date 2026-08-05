@@ -115,3 +115,8 @@ All notable changes and repository commits are documented here. This project fol
 
 - Adds the same Meaning, Literal translation, and Why/context picker to multi-expression translation.
 - Preserves unchecked fields while processing up to 50 selected expressions.
+
+### `fix: show batch progress after field selection`
+
+- Closes the field picker immediately when generation starts.
+- Keeps the per-expression completion percentage visible while the batch runs.

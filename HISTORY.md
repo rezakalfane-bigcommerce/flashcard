@@ -398,3 +398,14 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Added the field-selection dialog to multi-expression translation.
 - Batch jobs can now generate Meaning, Literal translation, Why/context, or any combination.
 - Unchecked fields remain unchanged for every selected expression.
+
+## 2026-08-05 — Close batch picker on generation
+
+### Prompt
+
+> When clikcing on the generate selected fields button, can you close the modal and display the progress bar?
+
+### Summary
+
+- Closes the batch field picker immediately after confirmation.
+- Starts the existing determinate progress display without waiting for the batch to finish.

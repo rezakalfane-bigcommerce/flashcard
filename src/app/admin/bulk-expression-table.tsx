@@ -83,7 +83,7 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
         <div className="flex flex-wrap items-center gap-2"><button type="button" disabled={Boolean(pendingProvider)} onClick={() => setSelected(new Set())} className="rounded-xl px-4 py-2 text-sm text-white/65 hover:bg-white/10 hover:text-white disabled:opacity-40">Clear</button><TranslateButton provider="openai" pending={pendingProvider === "openai"} disabled={Boolean(pendingProvider)} onTranslate={() => setProviderChoice("openai")}>Translate with OpenAI</TranslateButton><TranslateButton provider="gemini" pending={pendingProvider === "gemini"} disabled={Boolean(pendingProvider)} onTranslate={() => setProviderChoice("gemini")}>Translate with Gemini</TranslateButton></div>
         {pendingProvider && <BatchProgress count={selected.size} completed={completed} failed={failed} />}
       </div>}
-      {providerChoice && <BatchTranslationModal provider={providerChoice} onCancel={() => setProviderChoice(null)} onGenerate={(fields) => startBatch(providerChoice, fields)} />}
+      {providerChoice && <BatchTranslationModal provider={providerChoice} onCancel={() => setProviderChoice(null)} onGenerate={(fields) => { const provider = providerChoice; setProviderChoice(null); void startBatch(provider, fields); }} />}
     </form>
   );
 }
