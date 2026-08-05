@@ -74,7 +74,7 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
         <div className="flex items-center gap-2"><Link href="/admin" className="rounded-full px-4 py-2.5 text-sm font-semibold text-[#1d4d58] hover:bg-[#d9eeec]">Admin</Link><button onClick={() => setAdding(true)} className="rounded-full bg-[#15292d] px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#1d4d58] focus:outline-none focus:ring-2 focus:ring-[#b7d86a] focus:ring-offset-2">+ Add phrase</button></div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl gap-10 py-10 lg:grid-cols-[1fr_300px] lg:py-16">
+      <section className={`mx-auto grid max-w-6xl gap-10 py-10 ${quizMode ? "grid-cols-1 lg:py-16" : "lg:grid-cols-[1fr_300px] lg:py-16"}`}>
         {quizMode ? <QuizMode phrases={initialData.phrases} level={initialData.study.currentLevel} totalLevels={initialData.study.totalLevels} onExit={() => setQuizMode(false)} onPass={() => goToLevel(initialData.study.currentLevel + 1)} /> : <div>
           <div className="mb-6 flex items-end justify-between">
             <div>

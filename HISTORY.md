@@ -479,3 +479,14 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Generates 20 randomized multiple-choice questions with one correct meaning and two same-level distractors.
 - Shows immediate answer feedback and a final percentage score.
 - Requires at least 80% to unlock and advance to the next persisted level.
+
+## 2026-08-05 — Fixed quiz width
+
+### Prompt
+
+> The display of the quiz changes width, make it fixed
+
+### Summary
+
+- Changed quiz mode to a single-column layout with a stable full-width, max-width panel.
+- Prevented question and answer text from changing the quiz container width.

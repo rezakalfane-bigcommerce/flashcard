@@ -149,3 +149,7 @@ All notable changes and repository commits are documented here. This project fol
 
 - Adds 20-question multiple-choice quizzes for the active level.
 - Uses two distractors from the same level, gives immediate feedback, and requires 80% to advance.
+
+### `fix: stabilize quiz layout width`
+
+- Uses a fixed single-column quiz container so question content does not resize the display.
