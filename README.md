@@ -111,7 +111,23 @@ The importer validates the headers and replaces the current phrase collection in
 npm run phrases:import -- path/to/phrases.tsv "Another source"
 ```
 
+To restore the tracked originals for the 20-record correction set:
+
+```bash
+npm run phrases:restore-originals
+```
+
+This resets those records to their source meaning, literal translation, context, source, and category, with `translated` / `unreviewed` editorial status and no AI attribution.
+
 SQLite is intentionally local in this project. On serverless hosting, an instance filesystem is ephemeral, so production persistence requires a durable database service or a host with a persistent volume.
+
+Create a timestamped SQLite backup under `data/backup/` with:
+
+```bash
+npm run phrases:backup
+```
+
+Backups are local and ignored by Git. Copy them to your own protected storage for real disaster recovery.
 
 ## Design
 
@@ -136,8 +152,9 @@ Open [http://localhost:3000/admin](http://localhost:3000/admin) or select **Admi
 - Creation of new expressions, with automatic complexity scoring and level rebalancing.
 - AI translation drafts using OpenAI or Gemini through Vercel AI Gateway.
 - A live statistics dashboard at `/admin/statistics` covering translation and review statuses, publish readiness, field completeness, source progress, and level coverage.
+- Multi-select batch translation from the expression list, with OpenAI/Gemini choice, a 50-record safety cap, partial-failure reporting, and mandatory editorial review.
 
-Translation statuses are `missing`, `draft`, `translated`, and `reviewed`. Editorial statuses are `unreviewed`, `needs_review`, `approved`, and `rejected`. AI output is always saved as `draft` + `needs_review`; it is never automatically approved.
+Translation statuses are `missing`, `partly_missing`, `draft`, `translated`, and `reviewed`. `partly_missing` means exactly one or two of meaning, literal translation, and context are blank. Editorial statuses are `unreviewed`, `needs_review`, `approved`, and `rejected`. AI output is always saved as `draft` + `needs_review`; it is never automatically approved.
 
 The admin currently assumes a trusted, local operator and is not authenticated. Add access control before exposing it on a public deployment.
 

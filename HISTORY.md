@@ -318,3 +318,105 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Initialized a fresh isolated database and reconciled all dashboard aggregates against 1,380 expressions, 5 sources, and 69 levels.
 - Verified source totals and level totals independently sum back to the complete collection.
 - Prepared the statistics feature for merge into `main`.
+
+## 2026-08-05 — Bulk expression translation
+
+### Prompt
+
+> add a feature to allow selecting multiple expressions in the list, and send them to translations
+
+### Summary
+
+- Added row checkboxes and a select-visible control to the filtered administrative expression list.
+- Added a contextual batch toolbar with explicit OpenAI and Gemini actions.
+- Limited each batch to 20 expressions and processed requests three at a time to reduce provider pressure and runaway cost.
+- Stored successful generations as drafts requiring editorial review, while leaving failed records unchanged.
+- Preserved active filters and pagination after processing and displayed success and failure totals.
+
+## 2026-08-05 — Restore original translations
+
+### Prompt
+
+> I've translater already translated ones, can you re-import original values for these: [20 expressions listed in the prompt]
+
+### Summary
+
+- Matched all 20 requested expressions against the tracked `data/phrases.json` source.
+- Added `phrases:restore-originals` for a repeatable transactional restore.
+- Restored original meaning, literal translation, context, source, and category values.
+- Reset the records to `translated` / `unreviewed` and cleared AI attribution and admin notes.
+
+## 2026-08-05 — Database backup
+
+### Prompt
+
+> Can you backup the database (use a folder in data/backup maybe?)
+
+### Summary
+
+- Created `data/backup/phrases-20260805-194240.db` from the live SQLite database using SQLite's online backup command.
+- Verified `PRAGMA integrity_check` returns `ok` and the backup contains 1,380 expressions, 5 sources, and 69 levels.
+- Added `npm run phrases:backup` for repeatable timestamped backups.
+- Ignored backup database and WAL files so local backups are not accidentally committed.
+
+## 2026-08-05 — Batch translation progress
+
+### Prompt
+
+> Can you display a progression bar?
+
+### Follow-up
+
+> I'd like a percentage instead...
+
+### Summary
+
+- Added per-expression server actions so the client can track completed translation requests.
+- Replaced the indeterminate indicator with an accessible determinate counter such as `17/50 · 34%`.
+- Kept three-at-a-time processing and partial-failure reporting while the percentage advances after each completed request.
+
+## 2026-08-05 — Partly missing translation status
+
+### Prompt
+
+> Can you add a translation status of "Partly missing", when there there is one or two missing fields
+
+### Summary
+
+- Added `Partly missing` as a first-class translation status.
+- Automatically assigns it whenever one or two of meaning, literal translation, or context are empty.
+- Updated the editor, filters, statistics distribution, migrations, imports, and restore command to use the same completeness rule.
+
+## 2026-08-05 — Batch translation field selection
+
+### Prompt
+
+> Can you apply the same to the button "Translate with..." when multiple expressions are selected? (choose what to translate)
+
+### Summary
+
+- Added the field-selection dialog to multi-expression translation.
+- Batch jobs can now generate Meaning, Literal translation, Why/context, or any combination.
+- Unchecked fields remain unchanged for every selected expression.
+
+## 2026-08-05 — Close batch picker on generation
+
+### Prompt
+
+> When clikcing on the generate selected fields button, can you close the modal and display the progress bar?
+
+### Summary
+
+- Closes the batch field picker immediately after confirmation.
+- Starts the existing determinate progress display without waiting for the batch to finish.
+
+## 2026-08-05 — Synchronize filter controls after navigation
+
+### Prompt
+
+> When I go back to the list, filters are preselected but not displayed in the dropdowns
+
+### Summary
+
+- Remounts the admin filter form whenever URL-derived filter values change.
+- Keeps dropdown labels synchronized with the active query after client-side navigation.

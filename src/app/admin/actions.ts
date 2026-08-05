@@ -5,14 +5,15 @@ import { redirect } from "next/navigation";
 import {
   createAdminExpression,
   getExpression,
+  updateTranslationDraft,
   updateExpression,
   type ExpressionInput,
   type ReviewStatus,
   type TranslationStatus,
 } from "@/lib/db";
-import { generateTranslationDraft, type TranslationProvider } from "@/lib/translation";
+import { generateTranslationDraft, translationFields, type TranslationField, type TranslationProvider } from "@/lib/translation";
 
-const translationStatuses = new Set<TranslationStatus>(["missing", "draft", "translated", "reviewed"]);
+const translationStatuses = new Set<TranslationStatus>(["missing", "partly_missing", "draft", "translated", "reviewed"]);
 const reviewStatuses = new Set<ReviewStatus>(["unreviewed", "needs_review", "approved", "rejected"]);
 
 function text(formData: FormData, name: string) {
@@ -57,23 +58,14 @@ export async function createExpressionAction(formData: FormData) {
 export async function translateExpressionAction(formData: FormData) {
   const id = Number(formData.get("id"));
   const provider = String(formData.get("provider")) as TranslationProvider;
+  const fields = formData.getAll("fields").filter((field): field is TranslationField => typeof field === "string" && translationFields.includes(field as TranslationField));
   if (provider !== "openai" && provider !== "gemini") redirect(`/admin/${id}?error=Invalid+AI+provider`);
   const phrase = getExpression(id);
   if (!phrase) redirect("/admin?error=Expression+not+found");
 
   try {
-    const draft = await generateTranslationDraft(phrase.icelandic, provider);
-    updateExpression(id, {
-      icelandic: phrase.icelandic,
-      meaning: draft.meaning,
-      literal: draft.literal,
-      why: draft.why,
-      source: phrase.source,
-      category: phrase.category,
-      translationStatus: "draft",
-      reviewStatus: "needs_review",
-      adminNotes: phrase.adminNotes,
-    }, draft.model);
+    const draft = await generateTranslationDraft(phrase.icelandic, provider, fields.length ? fields : translationFields);
+    updateTranslationDraft(id, draft, draft.model);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Translation failed";
     redirect(`/admin/${id}?error=${encodeURIComponent(message.slice(0, 180))}`);
@@ -81,5 +73,58 @@ export async function translateExpressionAction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/admin/statistics");
   redirect(`/admin/${id}?generated=${provider}`);
+}
+
+export async function translateExpressionsAction(formData: FormData) {
+  const provider = String(formData.get("provider")) as TranslationProvider;
+  const requestedIds = formData.getAll("ids").map(Number).filter((id) => Number.isInteger(id) && id > 0);
+  const ids = [...new Set(requestedIds)].slice(0, 50);
+  const rawReturnTo = String(formData.get("returnTo") ?? "/admin");
+  const returnTo = rawReturnTo === "/admin" || rawReturnTo.startsWith("/admin?") || rawReturnTo.startsWith("/admin/") ? rawReturnTo : "/admin";
+
+  if (provider !== "openai" && provider !== "gemini") redirect(withBatchResult(returnTo, 0, ids.length, "Invalid AI provider"));
+  if (ids.length === 0) redirect(withBatchResult(returnTo, 0, 0, "Select at least one expression"));
+
+  let translated = 0;
+  let failed = 0;
+  for (let offset = 0; offset < ids.length; offset += 3) {
+    const group = ids.slice(offset, offset + 3);
+    const results = await Promise.allSettled(group.map(async (id) => {
+      const phrase = getExpression(id);
+      if (!phrase) throw new Error(`Expression ${id} not found`);
+      const draft = await generateTranslationDraft(phrase.icelandic, provider);
+      updateTranslationDraft(id, draft, draft.model);
+    }));
+    translated += results.filter((result) => result.status === "fulfilled").length;
+    failed += results.filter((result) => result.status === "rejected").length;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/admin/statistics");
+  redirect(withBatchResult(returnTo, translated, failed));
+}
+
+export async function translateOneExpressionAction(id: number, provider: TranslationProvider, fields: TranslationField[] = translationFields) {
+  if (provider !== "openai" && provider !== "gemini") return { ok: false, error: "Invalid AI provider" };
+  const phrase = getExpression(id);
+  if (!phrase) return { ok: false, error: "Expression not found" };
+  try {
+    const draft = await generateTranslationDraft(phrase.icelandic, provider, fields.length ? fields : translationFields);
+    updateTranslationDraft(id, draft, draft.model);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message.slice(0, 180) : "Translation failed" };
+  }
+}
+
+function withBatchResult(returnTo: string, translated: number, failed: number, error?: string) {
+  const [pathname, query = ""] = returnTo.split("?");
+  const params = new URLSearchParams(query);
+  params.set("batchTranslated", String(translated));
+  params.set("batchFailed", String(failed));
+  if (error) params.set("batchError", error);
+  return `${pathname}?${params.toString()}`;
 }

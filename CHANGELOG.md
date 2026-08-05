@@ -36,6 +36,7 @@ All notable changes and repository commits are documented here. This project fol
 - Added documented `.env.example` and ignored `.env.local` environment templates.
 - Admin filters and sorting now persist between visits, source counts are faceted, and filters can be cleared in one action.
 - Added an editorial statistics dashboard with translation, review, completeness, source, and level progress views.
+- Added multi-select batch translation from the admin list with bounded concurrency, provider selection, and per-batch results.
 - SQLite initialization now serializes schema migration, seeding, complexity scoring, and level assignment across concurrent Next.js workers.
 
 ### Dependencies
@@ -83,3 +84,44 @@ All notable changes and repository commits are documented here. This project fol
 - Adds a live editorial dashboard for translation status, review status, publish readiness, field completeness, source progress, and level coverage.
 - Links every actionable dashboard segment back to the corresponding filtered administrative records.
 - Uses request-time rendering so the statistics always reflect the current SQLite database.
+
+### `feat: add bulk expression translation`
+
+- Adds page-level multi-selection and select-visible controls to the expression list.
+- Sends up to 50 selected records to OpenAI or Gemini in bounded concurrent groups and stores successful results as drafts requiring review.
+- Preserves active filters after processing and reports successful and failed records without overwriting failures.
+
+### `fix: restore original values for translated records`
+
+- Adds a transactional `phrases:restore-originals` command for the 20 requested expressions.
+- Restores tracked source values and resets those records to imported `translated` / `unreviewed` state.
+
+### `chore: add SQLite backup command`
+
+- Adds `npm run phrases:backup` to create timestamped backups under `data/backup/`.
+- Verifies the initial backup with SQLite integrity and collection-count checks; local backup files remain ignored by Git.
+
+### `fix: show batch translation progress`
+
+- Adds per-expression translation actions so selected batches can show actual completion counts.
+- Displays an accessible determinate progress bar with completed/total count and percentage, including failed requests.
+
+### `feat: add partly missing translation status`
+
+- Adds `partly_missing` for records with one or two empty translation fields.
+- Applies the rule consistently to database migrations, editor saves, new records, imports, restores, filters, and statistics.
+
+### `feat: choose fields for batch translation`
+
+- Adds the same Meaning, Literal translation, and Why/context picker to multi-expression translation.
+- Preserves unchecked fields while processing up to 50 selected expressions.
+
+### `fix: show batch progress after field selection`
+
+- Closes the field picker immediately when generation starts.
+- Keeps the per-expression completion percentage visible while the batch runs.
+
+### `fix: synchronize filter controls after navigation`
+
+- Remounts the admin filter form when URL-derived filters change.
+- Ensures active translation, review, level, source, search, and sort values are visibly selected.
