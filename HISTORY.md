@@ -455,3 +455,14 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 - Added a compact play/pause button immediately before expressions with audio in the admin list.
 - Playback remains independent from selecting records or opening the editor.
+
+## 2026-08-05 — Align list audio controls
+
+### Prompt
+
+> Can you add a column so it looks better — icon is not very nicely centered
+
+### Summary
+
+- Added a dedicated Audio column to the admin expression table.
+- Centered the play button consistently without shifting expression text.

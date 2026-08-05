@@ -140,3 +140,7 @@ All notable changes and repository commits are documented here. This project fol
 ### `feat: add audio controls to expression list`
 
 - Adds compact play/pause buttons to the left of expressions that have pronunciation audio.
+
+### `fix: align audio controls in expression list`
+
+- Gives audio controls their own centered table column for consistent row alignment.
