@@ -44,6 +44,27 @@ export type DashboardData = {
   study: { currentLevel: number; totalLevels: number; levelMastered: number };
 };
 
+type StatusCount = { status: string; count: number };
+
+export type AdminStatistics = {
+  total: number;
+  translated: number;
+  approved: number;
+  ready: number;
+  translationStatuses: StatusCount[];
+  reviewStatuses: StatusCount[];
+  completeness: { meaning: number; literal: number; why: number; complete: number };
+  sources: Array<{
+    source: string;
+    total: number;
+    translated: number;
+    reviewed: number;
+    approved: number;
+    missing: number;
+  }>;
+  levels: Array<{ level: number; total: number; translated: number; approved: number }>;
+};
+
 const dataDir = path.join(process.cwd(), "data");
 fs.mkdirSync(dataDir, { recursive: true });
 const databasePath = process.env.SQLITE_PATH
@@ -248,6 +269,49 @@ export function getAdminExpressions(filters: AdminFilters) {
   sources.sort((a, b) => a.source.localeCompare(b.source));
   const { totalLevels } = db.prepare("SELECT MAX(level) AS totalLevels FROM phrases").get() as { totalLevels: number };
   return { rows, total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)), sources, totalLevels };
+}
+
+export function getAdminStatistics(): AdminStatistics {
+  const summary = db.prepare(`
+    SELECT COUNT(*) AS total,
+      SUM(CASE WHEN translation_status IN ('translated', 'reviewed') THEN 1 ELSE 0 END) AS translated,
+      SUM(CASE WHEN review_status = 'approved' THEN 1 ELSE 0 END) AS approved,
+      SUM(CASE WHEN translation_status IN ('translated', 'reviewed') AND review_status = 'approved' THEN 1 ELSE 0 END) AS ready,
+      SUM(CASE WHEN TRIM(meaning) != '' THEN 1 ELSE 0 END) AS meaning,
+      SUM(CASE WHEN TRIM(literal) != '' THEN 1 ELSE 0 END) AS literal,
+      SUM(CASE WHEN TRIM(why) != '' THEN 1 ELSE 0 END) AS why,
+      SUM(CASE WHEN TRIM(meaning) != '' AND TRIM(literal) != '' AND TRIM(why) != '' THEN 1 ELSE 0 END) AS complete
+    FROM phrases
+  `).get() as { total: number; translated: number; approved: number; ready: number; meaning: number; literal: number; why: number; complete: number };
+
+  const translationStatuses = db.prepare("SELECT translation_status AS status, COUNT(*) AS count FROM phrases GROUP BY translation_status ORDER BY count DESC").all() as StatusCount[];
+  const reviewStatuses = db.prepare("SELECT review_status AS status, COUNT(*) AS count FROM phrases GROUP BY review_status ORDER BY count DESC").all() as StatusCount[];
+  const sources = db.prepare(`
+    SELECT source, COUNT(*) AS total,
+      SUM(CASE WHEN translation_status IN ('translated', 'reviewed') THEN 1 ELSE 0 END) AS translated,
+      SUM(CASE WHEN translation_status = 'reviewed' THEN 1 ELSE 0 END) AS reviewed,
+      SUM(CASE WHEN review_status = 'approved' THEN 1 ELSE 0 END) AS approved,
+      SUM(CASE WHEN translation_status = 'missing' THEN 1 ELSE 0 END) AS missing
+    FROM phrases GROUP BY source ORDER BY total DESC, source ASC
+  `).all() as AdminStatistics["sources"];
+  const levels = db.prepare(`
+    SELECT level, COUNT(*) AS total,
+      SUM(CASE WHEN translation_status IN ('translated', 'reviewed') THEN 1 ELSE 0 END) AS translated,
+      SUM(CASE WHEN review_status = 'approved' THEN 1 ELSE 0 END) AS approved
+    FROM phrases GROUP BY level ORDER BY level ASC
+  `).all() as AdminStatistics["levels"];
+
+  return {
+    total: summary.total,
+    translated: summary.translated,
+    approved: summary.approved,
+    ready: summary.ready,
+    translationStatuses,
+    reviewStatuses,
+    completeness: { meaning: summary.meaning, literal: summary.literal, why: summary.why, complete: summary.complete },
+    sources,
+    levels,
+  };
 }
 
 export type ExpressionInput = Pick<Phrase, "icelandic" | "meaning" | "literal" | "why" | "source" | "category" | "translationStatus" | "reviewStatus" | "adminNotes">;

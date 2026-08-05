@@ -290,3 +290,31 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Verified the editorial migration produces 961 translated, 419 missing, and 1,380 unreviewed records.
 - Found and fixed a parallel initialization race by serializing migrations, seeding, scoring, and level assignment with a bounded SQLite busy timeout.
 - Prepared the validated admin phase for commit and merge into `main`.
+
+## 2026-08-05 — Translation statistics dashboard
+
+### Prompt
+
+> Add a page for statistics: repartition of translations by statuses, reviewd/unreviewed, etc. etc. a dashboard to see the progression of the translations
+
+### Summary
+
+- Added a live `/admin/statistics` dashboard linked from the expression administration header.
+- Added translation and editorial-review status distributions with direct links to their filtered record lists.
+- Added headline translated, approved, and ready-to-publish indicators.
+- Added English-field completeness, per-source translation progress, and coverage across all 69 difficulty levels.
+- Kept all aggregation inside SQLite and rendered the dashboard as a dependency-free Server Component.
+
+## 2026-08-05 — Statistics phase validation
+
+### Prompt
+
+> validate phase
+
+### Summary
+
+- Passed ESLint, standalone TypeScript checking, whitespace validation, and a production webpack build.
+- Confirmed `/admin/statistics` is rendered dynamically at request time rather than frozen during the build.
+- Initialized a fresh isolated database and reconciled all dashboard aggregates against 1,380 expressions, 5 sources, and 69 levels.
+- Verified source totals and level totals independently sum back to the complete collection.
+- Prepared the statistics feature for merge into `main`.

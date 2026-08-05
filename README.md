@@ -135,6 +135,7 @@ Open [http://localhost:3000/admin](http://localhost:3000/admin) or select **Admi
 - Editing of every language field, source, category, statuses, and private notes.
 - Creation of new expressions, with automatic complexity scoring and level rebalancing.
 - AI translation drafts using OpenAI or Gemini through Vercel AI Gateway.
+- A live statistics dashboard at `/admin/statistics` covering translation and review statuses, publish readiness, field completeness, source progress, and level coverage.
 
 Translation statuses are `missing`, `draft`, `translated`, and `reviewed`. Editorial statuses are `unreviewed`, `needs_review`, `approved`, and `rejected`. AI output is always saved as `draft` + `needs_review`; it is never automatically approved.
 

@@ -35,6 +35,7 @@ All notable changes and repository commits are documented here. This project fol
 - Added structured OpenAI and Gemini translation drafts through Vercel AI Gateway with model attribution and mandatory review status.
 - Added documented `.env.example` and ignored `.env.local` environment templates.
 - Admin filters and sorting now persist between visits, source counts are faceted, and filters can be cleared in one action.
+- Added an editorial statistics dashboard with translation, review, completeness, source, and level progress views.
 - SQLite initialization now serializes schema migration, seeding, complexity scoring, and level assignment across concurrent Next.js workers.
 
 ### Dependencies
@@ -46,6 +47,7 @@ All notable changes and repository commits are documented here. This project fol
 
 - `npm run lint` passes.
 - `npm run build` passes with Next.js 16.3.0 and Turbopack.
+- The dynamic statistics route passes a fresh-database webpack build, and its source and level aggregates reconcile to all 1,380 expressions.
 - SQLite contains all 593 supplied Tilvitnun expressions, from `Að aka seglum eftir vindi` through `Þyrnir í augum`.
 - SQLite contains 181 Wiktionary expressions in addition to the Tilvitnun collection, for 774 cards total.
 - SQLite contains 29 Visindavefir expressions, bringing the three-source collection to 803 cards total.
@@ -75,3 +77,9 @@ All notable changes and repository commits are documented here. This project fol
 - Adds the expression admin, editorial statuses, remembered faceted filters, detailed editing, record creation, environment templates, and structured OpenAI/Gemini translation drafts.
 - Hardens fresh SQLite initialization against concurrent build workers.
 - Validated with ESLint, TypeScript, whitespace checks, a production build, and isolated database initialization.
+
+### `feat: add translation progress statistics dashboard`
+
+- Adds a live editorial dashboard for translation status, review status, publish readiness, field completeness, source progress, and level coverage.
+- Links every actionable dashboard segment back to the corresponding filtered administrative records.
+- Uses request-time rendering so the statistics always reflect the current SQLite database.
