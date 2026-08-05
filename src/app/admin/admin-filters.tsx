@@ -46,7 +46,7 @@ export function AdminFilters({ initial, sources, totalLevels }: Props) {
   }
 
   return (
-    <form onSubmit={remember} className="grid gap-3 rounded-3xl border border-[#1d4d58]/15 bg-white/70 p-4 shadow-sm md:grid-cols-[minmax(240px,2fr)_repeat(6,minmax(120px,1fr))_auto_auto]">
+    <form key={[initial.query, initial.source, initial.translationStatus, initial.reviewStatus, initial.level, initial.sort, initial.direction].join("|")} onSubmit={remember} className="grid gap-3 rounded-3xl border border-[#1d4d58]/15 bg-white/70 p-4 shadow-sm md:grid-cols-[minmax(240px,2fr)_repeat(6,minmax(120px,1fr))_auto_auto]">
       <input name="query" defaultValue={initial.query} placeholder="Search Icelandic, meaning, literal, context…" className="rounded-xl border border-[#1d4d58]/15 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-[#b7d86a]" />
       <Select name="source" defaultValue={initial.source}><option value="">All sources</option>{sources.map(({ source, count }) => <option key={source} value={source}>{source} ({count})</option>)}</Select>
       <Select name="translationStatus" defaultValue={initial.translationStatus}><option value="">Any translation</option><option value="missing">Missing</option><option value="partly_missing">Partly missing</option><option value="draft">Draft</option><option value="translated">Translated</option><option value="reviewed">Reviewed</option></Select>

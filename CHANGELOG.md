@@ -120,3 +120,8 @@ All notable changes and repository commits are documented here. This project fol
 
 - Closes the field picker immediately when generation starts.
 - Keeps the per-expression completion percentage visible while the batch runs.
+
+### `fix: synchronize filter controls after navigation`
+
+- Remounts the admin filter form when URL-derived filters change.
+- Ensures active translation, review, level, source, search, and sort values are visibly selected.

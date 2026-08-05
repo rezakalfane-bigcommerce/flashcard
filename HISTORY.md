@@ -409,3 +409,14 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 - Closes the batch field picker immediately after confirmation.
 - Starts the existing determinate progress display without waiting for the batch to finish.
+
+## 2026-08-05 — Synchronize filter controls after navigation
+
+### Prompt
+
+> When I go back to the list, filters are preselected but not displayed in the dropdowns
+
+### Summary
+
+- Remounts the admin filter form whenever URL-derived filter values change.
+- Keeps dropdown labels synchronized with the active query after client-side navigation.
