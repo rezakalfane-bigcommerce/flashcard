@@ -27,6 +27,7 @@ Requirements: Node.js 20.19+, 22.13+, or 24+ is recommended. The project was gen
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -120,3 +121,35 @@ The interface is inspired by an Icelandic field notebook: glacial blue, volcanic
 
 - [HISTORY.md](./HISTORY.md) records user prompts and implementation summaries.
 - [CHANGELOG.md](./CHANGELOG.md) records commits and noteworthy project changes.
+
+## Database administration
+
+Open [http://localhost:3000/admin](http://localhost:3000/admin) or select **Admin** in the study header. The administrative workspace provides:
+
+- Full-text search across Icelandic expressions, meanings, literal translations, and context.
+- Filters for source, level, translation status, and editorial-review status.
+- Remembered filters and sorting across admin visits, with one-click clearing.
+- Faceted source counts that update from the active search, level, translation, and review filters.
+- Sorting by level, complexity, expression, source, or update time.
+- A paginated 50-row table with direct links to detailed records.
+- Editing of every language field, source, category, statuses, and private notes.
+- Creation of new expressions, with automatic complexity scoring and level rebalancing.
+- AI translation drafts using OpenAI or Gemini through Vercel AI Gateway.
+
+Translation statuses are `missing`, `draft`, `translated`, and `reviewed`. Editorial statuses are `unreviewed`, `needs_review`, `approved`, and `rejected`. AI output is always saved as `draft` + `needs_review`; it is never automatically approved.
+
+The admin currently assumes a trusted, local operator and is not authenticated. Add access control before exposing it on a public deployment.
+
+### AI translation setup
+
+The app uses AI SDK 6 and Vercel AI Gateway rather than provider-specific SDKs. The configured models are `openai/gpt-5.6-terra` and `google/gemini-3.6-flash`, selected from the live Gateway catalog on 2026-08-05.
+
+Vercel deployments can authenticate through OIDC. For local development, create an AI Gateway API key and place it in `.env.local`:
+
+```env
+AI_GATEWAY_API_KEY=your_key
+```
+
+No mock translation fallback is used. If Gateway authentication is unavailable, the editor reports the real provider error and leaves the record unchanged.
+
+See [`.env.example`](./.env.example) for every supported setting. The local `.env.local` file is ignored by Git and should contain real secrets only on your machine.

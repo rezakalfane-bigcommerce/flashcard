@@ -31,6 +31,11 @@ All notable changes and repository commits are documented here. This project fol
 - Expressions are organized into 69 persisted complexity levels of exactly 20 cards.
 - Study sessions use weighted random spaced repetition and automatic level progression.
 - Added temporary bounded previous/next level navigation for testing.
+- Added a complete expression admin with search, filters, sorting, pagination, detailed editing, record creation, and editorial statuses.
+- Added structured OpenAI and Gemini translation drafts through Vercel AI Gateway with model attribution and mandatory review status.
+- Added documented `.env.example` and ignored `.env.local` environment templates.
+- Admin filters and sorting now persist between visits, source counts are faceted, and filters can be cleared in one action.
+- SQLite initialization now serializes schema migration, seeding, complexity scoring, and level assignment across concurrent Next.js workers.
 
 ### Dependencies
 
@@ -64,3 +69,9 @@ All notable changes and repository commits are documented here. This project fol
 
 - Adds bilingual card details, persisted complexity scoring, 69 study levels, weighted spaced repetition, automatic progression, and temporary level navigation.
 - Validated against a fresh 1,380-card database with exact level sizes and monotonic complexity ordering.
+
+### `feat: add expression administration and AI translation workflow`
+
+- Adds the expression admin, editorial statuses, remembered faceted filters, detailed editing, record creation, environment templates, and structured OpenAI/Gemini translation drafts.
+- Hardens fresh SQLite initialization against concurrent build workers.
+- Validated with ESLint, TypeScript, whitespace checks, a production build, and isolated database initialization.
