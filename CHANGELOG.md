@@ -36,6 +36,7 @@ All notable changes and repository commits are documented here. This project fol
 - Added documented `.env.example` and ignored `.env.local` environment templates.
 - Admin filters and sorting now persist between visits, source counts are faceted, and filters can be cleared in one action.
 - Added an editorial statistics dashboard with translation, review, completeness, source, and level progress views.
+- Added multi-select batch translation from the admin list with bounded concurrency, provider selection, and per-batch results.
 - SQLite initialization now serializes schema migration, seeding, complexity scoring, and level assignment across concurrent Next.js workers.
 
 ### Dependencies
@@ -83,3 +84,9 @@ All notable changes and repository commits are documented here. This project fol
 - Adds a live editorial dashboard for translation status, review status, publish readiness, field completeness, source progress, and level coverage.
 - Links every actionable dashboard segment back to the corresponding filtered administrative records.
 - Uses request-time rendering so the statistics always reflect the current SQLite database.
+
+### `feat: add bulk expression translation`
+
+- Adds page-level multi-selection and select-visible controls to the expression list.
+- Sends up to 20 selected records to OpenAI or Gemini in bounded concurrent groups and stores successful results as drafts requiring review.
+- Preserves active filters after processing and reports successful and failed records without overwriting failures.

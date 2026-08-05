@@ -328,6 +328,15 @@ export function updateExpression(id: number, input: ExpressionInput, translatedB
   rebalanceLevels();
 }
 
+export function updateTranslationDraft(id: number, draft: Pick<Phrase, "meaning" | "literal" | "why">, translatedBy: string) {
+  db.prepare(`
+    UPDATE phrases SET english = ?, meaning = ?, literal = ?, why = ?,
+      translation_status = 'draft', review_status = 'needs_review',
+      translated_by = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(draft.meaning, draft.meaning, draft.literal, draft.why, translatedBy, id);
+}
+
 export function createAdminExpression(input: ExpressionInput) {
   const complexity = calculateComplexity(input.icelandic);
   const result = db.prepare(`

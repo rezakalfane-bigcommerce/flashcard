@@ -318,3 +318,17 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Initialized a fresh isolated database and reconciled all dashboard aggregates against 1,380 expressions, 5 sources, and 69 levels.
 - Verified source totals and level totals independently sum back to the complete collection.
 - Prepared the statistics feature for merge into `main`.
+
+## 2026-08-05 — Bulk expression translation
+
+### Prompt
+
+> add a feature to allow selecting multiple expressions in the list, and send them to translations
+
+### Summary
+
+- Added row checkboxes and a select-visible control to the filtered administrative expression list.
+- Added a contextual batch toolbar with explicit OpenAI and Gemini actions.
+- Limited each batch to 20 expressions and processed requests three at a time to reduce provider pressure and runaway cost.
+- Stored successful generations as drafts requiring editorial review, while leaving failed records unchanged.
+- Preserved active filters and pagination after processing and displayed success and failure totals.
