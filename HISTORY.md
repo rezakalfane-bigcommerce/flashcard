@@ -432,3 +432,15 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Ran lint, TypeScript validation, production build, and whitespace checks successfully.
 - Merged the validated feature branch into `main`.
 - Browser-level verification was unavailable because no browser connector was available and the isolated command process could not reach the local dev server.
+
+## 2026-08-05 — Pronunciation audio
+
+### Prompt
+
+> Give the possibility to upload an audio when editing an expression. Add a play button in the flash card (Icelandic audio)
+
+### Summary
+
+- Added an Icelandic audio upload field to the admin expression editor, including preview, replacement, and removal.
+- Added an `audio_url` SQLite column and local `public/audio/` storage with format and 15 MB size validation.
+- Added a Listen/Pause control to flash cards when a pronunciation recording exists.

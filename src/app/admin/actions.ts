@@ -2,11 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import {
   createAdminExpression,
   getExpression,
   updateTranslationDraft,
   updateExpression,
+  setExpressionAudio,
   type ExpressionInput,
   type ReviewStatus,
   type TranslationStatus,
@@ -20,6 +24,33 @@ function text(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim();
 }
 
+const audioExtensions: Record<string, string> = {
+  "audio/mpeg": ".mp3",
+  "audio/mp3": ".mp3",
+  "audio/wav": ".wav",
+  "audio/x-wav": ".wav",
+  "audio/ogg": ".ogg",
+  "audio/webm": ".webm",
+  "audio/mp4": ".m4a",
+  "audio/x-m4a": ".m4a",
+};
+
+async function saveAudioFile(id: number, file: File) {
+  if (!file.size) return "";
+  if (!audioExtensions[file.type]) throw new Error("Upload an MP3, WAV, OGG, WebM, or M4A audio file.");
+  if (file.size > 15 * 1024 * 1024) throw new Error("Audio files must be smaller than 15 MB.");
+  const directory = path.join(process.cwd(), "public", "audio");
+  await fs.mkdir(directory, { recursive: true });
+  const filename = `${id}-${randomUUID()}${audioExtensions[file.type]}`;
+  await fs.writeFile(path.join(directory, filename), Buffer.from(await file.arrayBuffer()));
+  return `/audio/${filename}`;
+}
+
+async function removeAudioFile(audioUrl: string) {
+  if (!audioUrl.startsWith("/audio/")) return;
+  await fs.rm(path.join(process.cwd(), "public", audioUrl.slice("/audio/".length)), { force: true });
+}
+
 function expressionInput(formData: FormData): ExpressionInput {
   const translationStatus = text(formData, "translationStatus") as TranslationStatus;
   const reviewStatus = text(formData, "reviewStatus") as ReviewStatus;
@@ -28,6 +59,7 @@ function expressionInput(formData: FormData): ExpressionInput {
     meaning: text(formData, "meaning"),
     literal: text(formData, "literal"),
     why: text(formData, "why"),
+    audioUrl: text(formData, "audioUrl"),
     source: text(formData, "source") || "Personal",
     category: text(formData, "category") || "Expressions",
     translationStatus: translationStatuses.has(translationStatus) ? translationStatus : "missing",
@@ -38,9 +70,17 @@ function expressionInput(formData: FormData): ExpressionInput {
 
 export async function saveExpressionAction(formData: FormData) {
   const id = Number(formData.get("id"));
+  const existing = getExpression(id);
   const input = expressionInput(formData);
   if (!input.icelandic) throw new Error("The Icelandic expression is required.");
+  const oldAudioUrl = existing?.audioUrl ?? "";
+  let audioUrl = existing?.audioUrl ?? input.audioUrl;
+  if (formData.get("removeAudio") === "on") audioUrl = "";
+  const audio = formData.get("audio");
+  if (audio instanceof File && audio.size > 0) audioUrl = await saveAudioFile(id, audio);
+  input.audioUrl = audioUrl;
   updateExpression(id, input);
+  if (oldAudioUrl && oldAudioUrl !== audioUrl) await removeAudioFile(oldAudioUrl);
   revalidatePath("/");
   revalidatePath("/admin");
   redirect(`/admin/${id}?saved=1`);
@@ -50,6 +90,8 @@ export async function createExpressionAction(formData: FormData) {
   const input = expressionInput(formData);
   if (!input.icelandic) throw new Error("The Icelandic expression is required.");
   const id = createAdminExpression(input);
+  const audio = formData.get("audio");
+  if (audio instanceof File && audio.size > 0) setExpressionAudio(id, await saveAudioFile(id, audio));
   revalidatePath("/");
   revalidatePath("/admin");
   redirect(`/admin/${id}?created=1`);

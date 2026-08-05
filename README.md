@@ -151,10 +151,13 @@ Open [http://localhost:3000/admin](http://localhost:3000/admin) or select **Admi
 - Editing of every language field, source, category, statuses, and private notes.
 - Creation of new expressions, with automatic complexity scoring and level rebalancing.
 - AI translation drafts using OpenAI or Gemini through Vercel AI Gateway.
+- Icelandic pronunciation audio uploads from the expression editor, with in-card playback controls.
 - A live statistics dashboard at `/admin/statistics` covering translation and review statuses, publish readiness, field completeness, source progress, and level coverage.
 - Multi-select batch translation from the expression list, with OpenAI/Gemini choice, a 50-record safety cap, partial-failure reporting, and mandatory editorial review.
 
 Translation statuses are `missing`, `partly_missing`, `draft`, `translated`, and `reviewed`. `partly_missing` means exactly one or two of meaning, literal translation, and context are blank. Editorial statuses are `unreviewed`, `needs_review`, `approved`, and `rejected`. AI output is always saved as `draft` + `needs_review`; it is never automatically approved.
+
+Audio recordings are stored locally in `public/audio/` and referenced by URL in SQLite. Uploads are limited to common browser audio formats and 15 MB. The folder is ignored by Git, so production deployments should use persistent object storage if recordings need to survive redeployments.
 
 The admin currently assumes a trusted, local operator and is not authenticated. Add access control before exposing it on a public deployment.
 

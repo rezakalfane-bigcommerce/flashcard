@@ -9,6 +9,7 @@ export type Phrase = {
   meaning: string;
   literal: string;
   why: string;
+  audioUrl: string;
   source: string;
   category: string;
   mastery: number;
@@ -84,6 +85,7 @@ db.exec(`
     meaning TEXT NOT NULL DEFAULT '',
     literal TEXT NOT NULL DEFAULT '',
     why TEXT NOT NULL DEFAULT '',
+    audio_url TEXT NOT NULL DEFAULT '',
     source TEXT NOT NULL DEFAULT 'Tilvitnun',
     category TEXT NOT NULL DEFAULT 'Everyday',
     mastery INTEGER NOT NULL DEFAULT 0,
@@ -115,6 +117,7 @@ const initializeDatabase = db.transaction(() => {
   for (const column of ["meaning", "literal", "why"]) {
     if (!columns.some(({ name }) => name === column)) db.exec(`ALTER TABLE phrases ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
   }
+  if (!columns.some(({ name }) => name === "audio_url")) db.exec("ALTER TABLE phrases ADD COLUMN audio_url TEXT NOT NULL DEFAULT ''");
   if (!columns.some(({ name }) => name === "source")) db.exec("ALTER TABLE phrases ADD COLUMN source TEXT NOT NULL DEFAULT 'Tilvitnun'");
   if (!columns.some(({ name }) => name === "complexity")) db.exec("ALTER TABLE phrases ADD COLUMN complexity INTEGER NOT NULL DEFAULT 0");
   if (!columns.some(({ name }) => name === "level")) db.exec("ALTER TABLE phrases ADD COLUMN level INTEGER NOT NULL DEFAULT 0");
@@ -179,7 +182,7 @@ export function getDashboardData(): DashboardData {
   const { currentLevel } = db.prepare("SELECT current_level AS currentLevel FROM study_state WHERE id = 1").get() as { currentLevel: number };
   const { totalLevels } = db.prepare("SELECT MAX(level) AS totalLevels FROM phrases").get() as { totalLevels: number };
   const phrases = db.prepare(`
-    SELECT id, icelandic, meaning, literal, why, source, category, mastery, reviews,
+    SELECT id, icelandic, meaning, literal, why, audio_url AS audioUrl, source, category, mastery, reviews,
       complexity, level, correct_streak AS correctStreak, next_review_at AS nextReviewAt,
       translation_status AS translationStatus, review_status AS reviewStatus,
       admin_notes AS adminNotes, translated_by AS translatedBy, updated_at AS updatedAt
@@ -233,7 +236,7 @@ export function setStudyLevel(requestedLevel: number) {
 }
 
 const adminSelect = `
-  SELECT id, icelandic, meaning, literal, why, source, category, mastery, reviews,
+  SELECT id, icelandic, meaning, literal, why, audio_url AS audioUrl, source, category, mastery, reviews,
     complexity, level, correct_streak AS correctStreak, next_review_at AS nextReviewAt,
     translation_status AS translationStatus, review_status AS reviewStatus,
     admin_notes AS adminNotes, translated_by AS translatedBy, updated_at AS updatedAt
@@ -318,7 +321,7 @@ export function getAdminStatistics(): AdminStatistics {
   };
 }
 
-export type ExpressionInput = Pick<Phrase, "icelandic" | "meaning" | "literal" | "why" | "source" | "category" | "translationStatus" | "reviewStatus" | "adminNotes">;
+export type ExpressionInput = Pick<Phrase, "icelandic" | "meaning" | "literal" | "why" | "audioUrl" | "source" | "category" | "translationStatus" | "reviewStatus" | "adminNotes">;
 
 function deriveTranslationStatus(requested: TranslationStatus, meaning: string, literal: string, why: string): TranslationStatus {
   const missing = [meaning, literal, why].filter((value) => !value.trim()).length;
@@ -331,12 +334,12 @@ export function updateExpression(id: number, input: ExpressionInput, translatedB
   const complexity = calculateComplexity(input.icelandic);
   const translationStatus = deriveTranslationStatus(input.translationStatus, input.meaning, input.literal, input.why);
   db.prepare(`
-    UPDATE phrases SET icelandic = ?, english = ?, meaning = ?, literal = ?, why = ?,
+    UPDATE phrases SET icelandic = ?, english = ?, meaning = ?, literal = ?, why = ?, audio_url = ?,
       source = ?, category = ?, translation_status = ?, review_status = ?, admin_notes = ?,
       translated_by = CASE WHEN ? != '' THEN ? ELSE translated_by END,
       complexity = ?, level = 0, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(input.icelandic, input.meaning, input.meaning, input.literal, input.why, input.source, input.category, translationStatus, input.reviewStatus, input.adminNotes, translatedBy, translatedBy, complexity, id);
+  `).run(input.icelandic, input.meaning, input.meaning, input.literal, input.why, input.audioUrl, input.source, input.category, translationStatus, input.reviewStatus, input.adminNotes, translatedBy, translatedBy, complexity, id);
   rebalanceLevels();
 }
 
@@ -356,10 +359,14 @@ export function createAdminExpression(input: ExpressionInput) {
   const complexity = calculateComplexity(input.icelandic);
   const translationStatus = deriveTranslationStatus(input.translationStatus, input.meaning, input.literal, input.why);
   const result = db.prepare(`
-    INSERT INTO phrases (icelandic, english, pronunciation, meaning, literal, why, source, category,
+    INSERT INTO phrases (icelandic, english, pronunciation, meaning, literal, why, audio_url, source, category,
       complexity, level, translation_status, review_status, admin_notes)
-    VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
-  `).run(input.icelandic, input.meaning, input.meaning, input.literal, input.why, input.source, input.category, complexity, translationStatus, input.reviewStatus, input.adminNotes);
+    VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+  `).run(input.icelandic, input.meaning, input.meaning, input.literal, input.why, input.audioUrl, input.source, input.category, complexity, translationStatus, input.reviewStatus, input.adminNotes);
   rebalanceLevels();
   return Number(result.lastInsertRowid);
+}
+
+export function setExpressionAudio(id: number, audioUrl: string) {
+  db.prepare("UPDATE phrases SET audio_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(audioUrl, id);
 }

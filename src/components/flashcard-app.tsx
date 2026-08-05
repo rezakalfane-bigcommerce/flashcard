@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { addPhrase, changeLevel, saveReview } from "@/app/actions";
 import type { DashboardData } from "@/lib/db";
 import { useRouter } from "next/navigation";
@@ -90,7 +90,7 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
           </div>
 
           {phrase && (
-            <div className="card-scene h-[400px] w-full sm:h-[430px]">
+            <div className="card-scene relative h-[400px] w-full sm:h-[430px]">
               <button onClick={() => setFlipped(!flipped)} aria-label={flipped ? "Show Icelandic phrase" : "Reveal translation"} className={`card-inner relative h-full w-full text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b7d86a] ${flipped ? "flipped" : ""}`}>
                 <article className="card-face absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[2rem] bg-[#1d4d58] p-8 text-white shadow-[0_25px_70px_-28px_rgba(21,41,45,.7)] sm:p-12">
                   <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full border-[55px] border-[#b7d86a]/20" />
@@ -118,6 +118,7 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
                   <p className="text-xs text-[#1d4d58]/60">Tap to see the phrase again</p>
                 </article>
               </button>
+              {phrase.audioUrl && <AudioPlayButton audioUrl={phrase.audioUrl} />}
             </div>
           )}
 
@@ -147,6 +148,22 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
       {adding && <AddPhraseModal close={() => setAdding(false)} />}
     </main>
   );
+}
+
+function AudioPlayButton({ audioUrl }: { audioUrl: string }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  function toggle(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      void audio.play();
+    } else {
+      audio.pause();
+    }
+  }
+  return <><button type="button" onClick={toggle} aria-label={playing ? "Pause Icelandic pronunciation" : "Play Icelandic pronunciation"} className="absolute right-7 top-7 z-20 inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#15292d]/65 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur transition hover:bg-[#15292d] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b7d86a] sm:right-10 sm:top-10"><span aria-hidden="true" className="text-sm">{playing ? "Ⅱ" : "▶"}</span>{playing ? "Pause" : "Listen"}</button><audio ref={audioRef} src={audioUrl} preload="metadata" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} /></>;
 }
 
 function Stat({ value, label }: { value: number; label: string }) {

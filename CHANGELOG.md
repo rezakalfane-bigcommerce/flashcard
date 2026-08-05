@@ -130,3 +130,9 @@ All notable changes and repository commits are documented here. This project fol
 
 - Validated lint, TypeScript, production build, and diff integrity.
 - Merged the feature branch into `main`.
+
+### `feat: add Icelandic pronunciation audio`
+
+- Adds editor upload, preview, replacement, and removal for audio recordings.
+- Stores the audio URL in SQLite and provides a Listen/Pause control on study cards.
+- Validates common audio formats and limits uploads to 15 MB; local audio files are ignored by Git.

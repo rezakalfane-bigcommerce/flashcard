@@ -29,6 +29,8 @@ data/*.db-wal
 data/backup/*.db
 data/backup/*.db-shm
 data/backup/*.db-wal
+/public/audio/*
+!/public/audio/.gitkeep
 
 # debug
 npm-debug.log*
