@@ -10,10 +10,13 @@ const originals = rows.filter((row) => names.includes(row.icelandic));
 if (originals.length !== names.length) throw new Error(`Expected ${names.length} source records, found ${originals.length}`);
 const db = new Database(databasePath);
 db.pragma("busy_timeout = 10000");
-const update = db.prepare(`UPDATE phrases SET english = ?, meaning = ?, literal = ?, why = ?, source = ?, category = ?, translation_status = 'translated', review_status = 'unreviewed', admin_notes = '', translated_by = '', updated_at = CURRENT_TIMESTAMP WHERE icelandic = ?`);
+const update = db.prepare(`UPDATE phrases SET english = ?, meaning = ?, literal = ?, why = ?, source = ?, category = ?, translation_status = CASE WHEN TRIM(?) = '' AND TRIM(?) = '' AND TRIM(?) = '' THEN 'missing' WHEN TRIM(?) = '' OR TRIM(?) = '' OR TRIM(?) = '' THEN 'partly_missing' ELSE 'translated' END, review_status = 'unreviewed', admin_notes = '', translated_by = '', updated_at = CURRENT_TIMESTAMP WHERE icelandic = ?`);
 db.transaction(() => {
   for (const row of originals) {
-    const result = update.run(row.meaning ?? "", row.meaning ?? "", row.literal ?? "", row.why ?? "", row.source ?? "Tilvitnun", row.category ?? "Expressions", row.icelandic);
+    const meaning = row.meaning ?? "";
+    const literal = row.literal ?? "";
+    const why = row.why ?? "";
+    const result = update.run(meaning, meaning, literal, why, row.source ?? "Tilvitnun", row.category ?? "Expressions", meaning, literal, why, meaning, literal, why, row.icelandic);
     if (result.changes !== 1) throw new Error(`Expected one database record for ${row.icelandic}, changed ${result.changes}`);
   }
 })();

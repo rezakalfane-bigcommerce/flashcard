@@ -374,3 +374,27 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Added per-expression server actions so the client can track completed translation requests.
 - Replaced the indeterminate indicator with an accessible determinate counter such as `17/50 · 34%`.
 - Kept three-at-a-time processing and partial-failure reporting while the percentage advances after each completed request.
+
+## 2026-08-05 — Partly missing translation status
+
+### Prompt
+
+> Can you add a translation status of "Partly missing", when there there is one or two missing fields
+
+### Summary
+
+- Added `Partly missing` as a first-class translation status.
+- Automatically assigns it whenever one or two of meaning, literal translation, or context are empty.
+- Updated the editor, filters, statistics distribution, migrations, imports, and restore command to use the same completeness rule.
+
+## 2026-08-05 — Batch translation field selection
+
+### Prompt
+
+> Can you apply the same to the button "Translate with..." when multiple expressions are selected? (choose what to translate)
+
+### Summary
+
+- Added the field-selection dialog to multi-expression translation.
+- Batch jobs can now generate Meaning, Literal translation, Why/context, or any combination.
+- Unchecked fields remain unchanged for every selected expression.

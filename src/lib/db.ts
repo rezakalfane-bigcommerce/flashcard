@@ -24,7 +24,7 @@ export type Phrase = {
   updatedAt: string;
 };
 
-export type TranslationStatus = "missing" | "draft" | "translated" | "reviewed";
+export type TranslationStatus = "missing" | "partly_missing" | "draft" | "translated" | "reviewed";
 export type ReviewStatus = "unreviewed" | "needs_review" | "approved" | "rejected";
 
 export type AdminFilters = {
@@ -132,7 +132,11 @@ const initializeDatabase = db.transaction(() => {
 
   db.exec(`
     UPDATE phrases SET next_review_at = CURRENT_TIMESTAMP WHERE next_review_at = '';
-    UPDATE phrases SET translation_status = 'translated' WHERE translation_status = 'missing' AND meaning != '';
+    UPDATE phrases SET translation_status = CASE
+      WHEN TRIM(meaning) = '' AND TRIM(literal) = '' AND TRIM(why) = '' THEN 'missing'
+      WHEN TRIM(meaning) = '' OR TRIM(literal) = '' OR TRIM(why) = '' THEN 'partly_missing'
+      ELSE 'translated'
+    END WHERE translation_status IN ('missing', 'partly_missing', 'translated');
     UPDATE phrases SET updated_at = created_at WHERE updated_at = '';
     CREATE TABLE IF NOT EXISTS study_state (
       id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -316,34 +320,46 @@ export function getAdminStatistics(): AdminStatistics {
 
 export type ExpressionInput = Pick<Phrase, "icelandic" | "meaning" | "literal" | "why" | "source" | "category" | "translationStatus" | "reviewStatus" | "adminNotes">;
 
+function deriveTranslationStatus(requested: TranslationStatus, meaning: string, literal: string, why: string): TranslationStatus {
+  const missing = [meaning, literal, why].filter((value) => !value.trim()).length;
+  if (missing === 3) return "missing";
+  if (missing > 0) return "partly_missing";
+  return requested === "missing" || requested === "partly_missing" ? "translated" : requested;
+}
+
 export function updateExpression(id: number, input: ExpressionInput, translatedBy = "") {
   const complexity = calculateComplexity(input.icelandic);
+  const translationStatus = deriveTranslationStatus(input.translationStatus, input.meaning, input.literal, input.why);
   db.prepare(`
     UPDATE phrases SET icelandic = ?, english = ?, meaning = ?, literal = ?, why = ?,
       source = ?, category = ?, translation_status = ?, review_status = ?, admin_notes = ?,
       translated_by = CASE WHEN ? != '' THEN ? ELSE translated_by END,
       complexity = ?, level = 0, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(input.icelandic, input.meaning, input.meaning, input.literal, input.why, input.source, input.category, input.translationStatus, input.reviewStatus, input.adminNotes, translatedBy, translatedBy, complexity, id);
+  `).run(input.icelandic, input.meaning, input.meaning, input.literal, input.why, input.source, input.category, translationStatus, input.reviewStatus, input.adminNotes, translatedBy, translatedBy, complexity, id);
   rebalanceLevels();
 }
 
-export function updateTranslationDraft(id: number, draft: Pick<Phrase, "meaning" | "literal" | "why">, translatedBy: string) {
-  db.prepare(`
-    UPDATE phrases SET english = ?, meaning = ?, literal = ?, why = ?,
-      translation_status = 'draft', review_status = 'needs_review',
-      translated_by = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).run(draft.meaning, draft.meaning, draft.literal, draft.why, translatedBy, id);
+export function updateTranslationDraft(id: number, draft: Partial<Pick<Phrase, "meaning" | "literal" | "why">>, translatedBy: string) {
+  const values: Array<string | number> = [];
+  const assignments: string[] = [];
+  if (draft.meaning !== undefined) { assignments.push("english = ?, meaning = ?"); values.push(draft.meaning, draft.meaning); }
+  if (draft.literal !== undefined) { assignments.push("literal = ?"); values.push(draft.literal); }
+  if (draft.why !== undefined) { assignments.push("why = ?"); values.push(draft.why); }
+  if (!assignments.length) return;
+  assignments.push("translation_status = CASE WHEN TRIM(meaning) = '' AND TRIM(literal) = '' AND TRIM(why) = '' THEN 'missing' WHEN TRIM(meaning) = '' OR TRIM(literal) = '' OR TRIM(why) = '' THEN 'partly_missing' ELSE 'draft' END", "review_status = 'needs_review'", "translated_by = ?", "updated_at = CURRENT_TIMESTAMP");
+  values.push(translatedBy, id);
+  db.prepare(`UPDATE phrases SET ${assignments.join(", ")} WHERE id = ?`).run(...values);
 }
 
 export function createAdminExpression(input: ExpressionInput) {
   const complexity = calculateComplexity(input.icelandic);
+  const translationStatus = deriveTranslationStatus(input.translationStatus, input.meaning, input.literal, input.why);
   const result = db.prepare(`
     INSERT INTO phrases (icelandic, english, pronunciation, meaning, literal, why, source, category,
       complexity, level, translation_status, review_status, admin_notes)
     VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
-  `).run(input.icelandic, input.meaning, input.meaning, input.literal, input.why, input.source, input.category, complexity, input.translationStatus, input.reviewStatus, input.adminNotes);
+  `).run(input.icelandic, input.meaning, input.meaning, input.literal, input.why, input.source, input.category, complexity, translationStatus, input.reviewStatus, input.adminNotes);
   rebalanceLevels();
   return Number(result.lastInsertRowid);
 }

@@ -2,10 +2,11 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { getAdminStatistics } from "@/lib/db";
 
-const translationOrder = ["missing", "draft", "translated", "reviewed"];
+const translationOrder = ["missing", "partly_missing", "draft", "translated", "reviewed"];
 const reviewOrder = ["unreviewed", "needs_review", "approved", "rejected"];
 const colors: Record<string, string> = {
   missing: "#b8c8c8",
+  partly_missing: "#e4aa57",
   draft: "#e4aa57",
   translated: "#4f8990",
   reviewed: "#1d4d58",

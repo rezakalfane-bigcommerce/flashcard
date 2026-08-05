@@ -5,13 +5,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { translateExpressionsAction, translateOneExpressionAction } from "./actions";
 import type { Phrase } from "@/lib/db";
+import type { TranslationField } from "@/lib/translation";
 
 const selectionLimit = 50;
+const translationFields: Array<{ id: TranslationField; label: string; description: string }> = [
+  { id: "meaning", label: "Meaning", description: "Natural English equivalent" },
+  { id: "literal", label: "Literal translation", description: "Close word-for-word rendering" },
+  { id: "why", label: "Why / context", description: "Usage, imagery, or etymology" },
+];
 
 export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; returnTo: string }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [pendingProvider, setPendingProvider] = useState<"openai" | "gemini" | null>(null);
+  const [providerChoice, setProviderChoice] = useState<"openai" | "gemini" | null>(null);
   const [completed, setCompleted] = useState(0);
   const [failed, setFailed] = useState(0);
   const selectableCount = Math.min(phrases.length, selectionLimit);
@@ -32,7 +39,7 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
     setSelected(new Set(phrases.slice(0, selectionLimit).map((phrase) => phrase.id)));
   }
 
-  async function startBatch(provider: "openai" | "gemini") {
+  async function startBatch(provider: "openai" | "gemini", fields: TranslationField[]) {
     if (pendingProvider || !selected.size) return;
     setPendingProvider(provider);
     setCompleted(0);
@@ -42,7 +49,7 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
     let errors = 0;
     for (let offset = 0; offset < ids.length; offset += 3) {
       const group = ids.slice(offset, offset + 3);
-      const results = await Promise.all(group.map((id) => translateOneExpressionAction(id, provider)));
+      const results = await Promise.all(group.map((id) => translateOneExpressionAction(id, provider, fields)));
       translated += results.filter((result) => result.ok).length;
       errors += results.filter((result) => !result.ok).length;
       setCompleted((count) => count + results.length);
@@ -53,6 +60,7 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
     params.set("batchTranslated", String(translated));
     params.set("batchFailed", String(errors));
     setPendingProvider(null);
+    setProviderChoice(null);
     router.replace(`${pathname}?${params.toString()}`);
   }
 
@@ -72,15 +80,29 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
       </div>
       {selected.size > 0 && <div className="relative sticky bottom-4 z-10 mx-4 mb-4 mt-3 flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl bg-[#15292d] px-5 py-4 text-white shadow-[0_16px_45px_rgba(21,41,45,.28)]">
         <div><p className="font-semibold">{selected.size} expression{selected.size === 1 ? "" : "s"} selected</p><p className="mono mt-1 text-[9px] uppercase tracking-[.12em] text-white/45">Saved as drafts · human review required · maximum {selectionLimit}</p></div>
-        <div className="flex flex-wrap items-center gap-2"><button type="button" disabled={Boolean(pendingProvider)} onClick={() => setSelected(new Set())} className="rounded-xl px-4 py-2 text-sm text-white/65 hover:bg-white/10 hover:text-white disabled:opacity-40">Clear</button><TranslateButton provider="openai" pending={pendingProvider === "openai"} disabled={Boolean(pendingProvider)} onTranslate={() => startBatch("openai")}>Translate with OpenAI</TranslateButton><TranslateButton provider="gemini" pending={pendingProvider === "gemini"} disabled={Boolean(pendingProvider)} onTranslate={() => startBatch("gemini")}>Translate with Gemini</TranslateButton></div>
+        <div className="flex flex-wrap items-center gap-2"><button type="button" disabled={Boolean(pendingProvider)} onClick={() => setSelected(new Set())} className="rounded-xl px-4 py-2 text-sm text-white/65 hover:bg-white/10 hover:text-white disabled:opacity-40">Clear</button><TranslateButton provider="openai" pending={pendingProvider === "openai"} disabled={Boolean(pendingProvider)} onTranslate={() => setProviderChoice("openai")}>Translate with OpenAI</TranslateButton><TranslateButton provider="gemini" pending={pendingProvider === "gemini"} disabled={Boolean(pendingProvider)} onTranslate={() => setProviderChoice("gemini")}>Translate with Gemini</TranslateButton></div>
         {pendingProvider && <BatchProgress count={selected.size} completed={completed} failed={failed} />}
       </div>}
+      {providerChoice && <BatchTranslationModal provider={providerChoice} onCancel={() => setProviderChoice(null)} onGenerate={(fields) => startBatch(providerChoice, fields)} />}
     </form>
   );
 }
 
-function TranslateButton({ provider, children, pending, disabled, onTranslate }: { provider: "openai" | "gemini"; children: React.ReactNode; pending: boolean; disabled: boolean; onTranslate: () => void }) {
-  return <button type="button" disabled={disabled} onClick={() => { if (window.confirm(`Generate new ${provider === "openai" ? "OpenAI" : "Gemini"} drafts for the selected expressions? Existing English text will be replaced.`)) onTranslate(); }} className="rounded-xl bg-[#b7d86a] px-4 py-2 text-sm font-semibold text-[#15292d] hover:bg-[#c6e57c] disabled:cursor-wait disabled:opacity-50">{pending ? "Translating…" : children}</button>;
+function TranslateButton({ children, pending, disabled, onTranslate }: { provider: "openai" | "gemini"; children: React.ReactNode; pending: boolean; disabled: boolean; onTranslate: () => void }) {
+  return <button type="button" disabled={disabled} onClick={onTranslate} className="rounded-xl bg-[#b7d86a] px-4 py-2 text-sm font-semibold text-[#15292d] hover:bg-[#c6e57c] disabled:cursor-wait disabled:opacity-50">{pending ? "Translating…" : children}</button>;
+}
+
+function BatchTranslationModal({ provider, onCancel, onGenerate }: { provider: "openai" | "gemini"; onCancel: () => void; onGenerate: (fields: TranslationField[]) => void }) {
+  const [fields, setFields] = useState<TranslationField[]>(translationFields.map((field) => field.id));
+  function toggle(field: TranslationField) { setFields((current) => current.includes(field) ? current.filter((item) => item !== field) : [...current, field]); }
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#15292d]/60 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+    <div className="w-full max-w-lg rounded-[2rem] border border-[#1d4d58]/15 bg-[#f4f8f7] p-6 text-[#15292d] shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="batch-translation-modal-title">
+      <div className="flex items-start justify-between gap-5"><div><p className="mono text-[10px] uppercase tracking-[.18em] text-[#78979c]">{provider === "openai" ? "OpenAI" : "Gemini"} batch draft</p><h2 id="batch-translation-modal-title" className="display mt-2 text-4xl">Choose what to generate</h2></div><button type="button" onClick={onCancel} aria-label="Close translation dialog" className="rounded-full px-3 py-1 text-2xl leading-none text-[#78979c] hover:bg-[#d9eeec]">×</button></div>
+      <p className="mt-4 text-sm leading-6 text-[#52747a]">Selected fields are generated for every expression. Existing values in unchecked fields remain untouched.</p>
+      <div className="mt-6 space-y-3">{translationFields.map((field) => <label key={field.id} className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[#1d4d58]/10 bg-white px-4 py-3 hover:border-[#1d4d58]/30"><input type="checkbox" checked={fields.includes(field.id)} onChange={() => toggle(field.id)} className="mt-1 h-4 w-4 accent-[#1d4d58]" /><span><strong className="block text-sm">{field.label}</strong><span className="text-xs text-[#78979c]">{field.description}</span></span></label>)}</div>
+      <div className="mt-7 flex justify-end gap-3 border-t border-[#1d4d58]/10 pt-5"><button type="button" onClick={onCancel} className="rounded-xl px-4 py-2 text-sm font-semibold text-[#52747a] hover:bg-[#d9eeec]">Cancel</button><button type="button" disabled={!fields.length} onClick={() => onGenerate(fields)} className="rounded-xl bg-[#15292d] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1d4d58] disabled:opacity-40">Generate selected fields</button></div>
+    </div>
+  </div>;
 }
 
 function BatchProgress({ count, completed, failed }: { count: number; completed: number; failed: number }) {
@@ -88,4 +110,4 @@ function BatchProgress({ count, completed, failed }: { count: number; completed:
   return <div className="absolute inset-x-0 bottom-0 h-8 bg-white/10 px-5" role="progressbar" aria-label={`Translating ${count} selected expressions`} aria-valuemin={0} aria-valuemax={count} aria-valuenow={completed}><div className="flex h-full items-center gap-3"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#b7d86a] transition-[width] duration-300" style={{ width: `${percent}%` }} /></div><span className="mono min-w-20 text-right text-[10px] text-white/60">{completed}/{count} · {percent}%{failed ? ` · ${failed} failed` : ""}</span></div></div>;
 }
 
-function Status({ value }: { value: string }) { const active = value === "approved" || value === "reviewed"; const attention = value === "needs_review" || value === "draft"; return <span className={`mono inline-flex rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[.1em] ${active ? "bg-[#b7d86a]/35 text-[#1d4d58]" : attention ? "bg-amber-100 text-amber-800" : "bg-[#78979c]/10 text-[#78979c]"}`}>{value.replace("_", " ")}</span>; }
+function Status({ value }: { value: string }) { const active = value === "approved" || value === "reviewed"; const attention = value === "needs_review" || value === "draft" || value === "partly_missing"; return <span className={`mono inline-flex rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[.1em] ${active ? "bg-[#b7d86a]/35 text-[#1d4d58]" : attention ? "bg-amber-100 text-amber-800" : "bg-[#78979c]/10 text-[#78979c]"}`}>{value.replace("_", " ")}</span>; }

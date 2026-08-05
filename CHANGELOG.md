@@ -105,3 +105,13 @@ All notable changes and repository commits are documented here. This project fol
 
 - Adds per-expression translation actions so selected batches can show actual completion counts.
 - Displays an accessible determinate progress bar with completed/total count and percentage, including failed requests.
+
+### `feat: add partly missing translation status`
+
+- Adds `partly_missing` for records with one or two empty translation fields.
+- Applies the rule consistently to database migrations, editor saves, new records, imports, restores, filters, and statistics.
+
+### `feat: choose fields for batch translation`
+
+- Adds the same Meaning, Literal translation, and Why/context picker to multi-expression translation.
+- Preserves unchecked fields while processing up to 50 selected expressions.

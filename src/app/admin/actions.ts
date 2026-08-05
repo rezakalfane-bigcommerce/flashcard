@@ -11,9 +11,9 @@ import {
   type ReviewStatus,
   type TranslationStatus,
 } from "@/lib/db";
-import { generateTranslationDraft, type TranslationProvider } from "@/lib/translation";
+import { generateTranslationDraft, translationFields, type TranslationField, type TranslationProvider } from "@/lib/translation";
 
-const translationStatuses = new Set<TranslationStatus>(["missing", "draft", "translated", "reviewed"]);
+const translationStatuses = new Set<TranslationStatus>(["missing", "partly_missing", "draft", "translated", "reviewed"]);
 const reviewStatuses = new Set<ReviewStatus>(["unreviewed", "needs_review", "approved", "rejected"]);
 
 function text(formData: FormData, name: string) {
@@ -58,12 +58,13 @@ export async function createExpressionAction(formData: FormData) {
 export async function translateExpressionAction(formData: FormData) {
   const id = Number(formData.get("id"));
   const provider = String(formData.get("provider")) as TranslationProvider;
+  const fields = formData.getAll("fields").filter((field): field is TranslationField => typeof field === "string" && translationFields.includes(field as TranslationField));
   if (provider !== "openai" && provider !== "gemini") redirect(`/admin/${id}?error=Invalid+AI+provider`);
   const phrase = getExpression(id);
   if (!phrase) redirect("/admin?error=Expression+not+found");
 
   try {
-    const draft = await generateTranslationDraft(phrase.icelandic, provider);
+    const draft = await generateTranslationDraft(phrase.icelandic, provider, fields.length ? fields : translationFields);
     updateTranslationDraft(id, draft, draft.model);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Translation failed";
@@ -106,12 +107,12 @@ export async function translateExpressionsAction(formData: FormData) {
   redirect(withBatchResult(returnTo, translated, failed));
 }
 
-export async function translateOneExpressionAction(id: number, provider: TranslationProvider) {
+export async function translateOneExpressionAction(id: number, provider: TranslationProvider, fields: TranslationField[] = translationFields) {
   if (provider !== "openai" && provider !== "gemini") return { ok: false, error: "Invalid AI provider" };
   const phrase = getExpression(id);
   if (!phrase) return { ok: false, error: "Expression not found" };
   try {
-    const draft = await generateTranslationDraft(phrase.icelandic, provider);
+    const draft = await generateTranslationDraft(phrase.icelandic, provider, fields.length ? fields : translationFields);
     updateTranslationDraft(id, draft, draft.model);
     return { ok: true };
   } catch (error) {
