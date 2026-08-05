@@ -153,3 +153,22 @@ All notable changes and repository commits are documented here. This project fol
 ### `fix: stabilize quiz layout width`
 
 - Uses a fixed single-column quiz container so question content does not resize the display.
+
+### `feat: add expression archive workflow`
+
+- Adds SQLite archive state, an `/admin/archive` page, and Archive/Un-archive controls in list and detail views.
+- Excludes archived expressions from study cards, quizzes, active levels, and statistics.
+- Trims search values before querying.
+
+### `fix: confirm archive actions`
+
+- Adds a shared confirmation modal before archiving or un-archiving from list and detail views.
+
+### `fix: align archive row actions`
+
+- Keeps Edit and Archive/Un-archive controls on one horizontal action row.
+
+### `chore: validate archive workflow and backup database`
+
+- Validated lint, TypeScript, production build, and archive route generation.
+- Created an integrity-checked SQLite backup under `data/backup/`.

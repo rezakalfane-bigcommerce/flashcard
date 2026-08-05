@@ -147,6 +147,7 @@ Open [http://localhost:3000/admin](http://localhost:3000/admin) or select **Admi
 - Filters for source, level, translation status, and editorial-review status.
 - Remembered filters and sorting across admin visits, with one-click clearing.
 - Faceted source counts that update from the active search, level, translation, and review filters.
+- Archive workflow at `/admin/archive`, with Archive and Un-archive actions on list and detail views. Archived records are excluded from flash cards, quizzes, levels, and statistics.
 - Sorting by level, complexity, expression, source, or update time.
 - A paginated 50-row table with direct links to detailed records.
 - Editing of every language field, source, category, statuses, and private notes.

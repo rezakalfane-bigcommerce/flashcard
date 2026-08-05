@@ -23,6 +23,7 @@ export type Phrase = {
   adminNotes: string;
   translatedBy: string;
   updatedAt: string;
+  archivedAt: string;
 };
 
 export type TranslationStatus = "missing" | "partly_missing" | "draft" | "translated" | "reviewed";
@@ -37,6 +38,7 @@ export type AdminFilters = {
   sort?: "icelandic" | "level" | "complexity" | "source" | "updated";
   direction?: "asc" | "desc";
   page?: number;
+  archived?: boolean;
 };
 
 export type DashboardData = {
@@ -99,13 +101,14 @@ db.exec(`
     admin_notes TEXT NOT NULL DEFAULT '',
     translated_by TEXT NOT NULL DEFAULT '',
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    archived_at TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
 function rebalanceLevels() {
   const rebalance = db.transaction(() => {
-    const ranked = db.prepare("SELECT id FROM phrases ORDER BY complexity ASC, LENGTH(icelandic) ASC, icelandic COLLATE NOCASE ASC, id ASC").all() as { id: number }[];
+    const ranked = db.prepare("SELECT id FROM phrases WHERE archived_at = '' ORDER BY complexity ASC, LENGTH(icelandic) ASC, icelandic COLLATE NOCASE ASC, id ASC").all() as { id: number }[];
     const assignLevel = db.prepare("UPDATE phrases SET level = ? WHERE id = ?");
     ranked.forEach((phrase, index) => assignLevel.run(Math.floor(index / 20) + 1, phrase.id));
   });
@@ -118,6 +121,7 @@ const initializeDatabase = db.transaction(() => {
     if (!columns.some(({ name }) => name === column)) db.exec(`ALTER TABLE phrases ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
   }
   if (!columns.some(({ name }) => name === "audio_url")) db.exec("ALTER TABLE phrases ADD COLUMN audio_url TEXT NOT NULL DEFAULT ''");
+  if (!columns.some(({ name }) => name === "archived_at")) db.exec("ALTER TABLE phrases ADD COLUMN archived_at TEXT NOT NULL DEFAULT ''");
   if (!columns.some(({ name }) => name === "source")) db.exec("ALTER TABLE phrases ADD COLUMN source TEXT NOT NULL DEFAULT 'Tilvitnun'");
   if (!columns.some(({ name }) => name === "complexity")) db.exec("ALTER TABLE phrases ADD COLUMN complexity INTEGER NOT NULL DEFAULT 0");
   if (!columns.some(({ name }) => name === "level")) db.exec("ALTER TABLE phrases ADD COLUMN level INTEGER NOT NULL DEFAULT 0");
@@ -180,15 +184,15 @@ initializeDatabase.immediate();
 
 export function getDashboardData(): DashboardData {
   const { currentLevel } = db.prepare("SELECT current_level AS currentLevel FROM study_state WHERE id = 1").get() as { currentLevel: number };
-  const { totalLevels } = db.prepare("SELECT MAX(level) AS totalLevels FROM phrases").get() as { totalLevels: number };
+  const { totalLevels } = db.prepare("SELECT MAX(level) AS totalLevels FROM phrases WHERE archived_at = ''").get() as { totalLevels: number };
   const phrases = db.prepare(`
     SELECT id, icelandic, meaning, literal, why, audio_url AS audioUrl, source, category, mastery, reviews,
       complexity, level, correct_streak AS correctStreak, next_review_at AS nextReviewAt,
       translation_status AS translationStatus, review_status AS reviewStatus,
       admin_notes AS adminNotes, translated_by AS translatedBy, updated_at AS updatedAt
-    FROM phrases WHERE level = ? ORDER BY complexity ASC, id ASC
+    FROM phrases WHERE level = ? AND archived_at = '' ORDER BY complexity ASC, id ASC
   `).all(currentLevel) as Phrase[];
-  const totals = db.prepare("SELECT COUNT(*) AS total, SUM(CASE WHEN mastery >= 4 THEN 1 ELSE 0 END) AS mastered, SUM(reviews) AS reviews FROM phrases").get() as { total: number; mastered: number; reviews: number };
+  const totals = db.prepare("SELECT COUNT(*) AS total, SUM(CASE WHEN mastery >= 4 THEN 1 ELSE 0 END) AS mastered, SUM(reviews) AS reviews FROM phrases WHERE archived_at = ''").get() as { total: number; mastered: number; reviews: number };
   return {
     phrases,
     stats: totals,
@@ -236,10 +240,10 @@ export function setStudyLevel(requestedLevel: number) {
 }
 
 const adminSelect = `
-  SELECT id, icelandic, meaning, literal, why, audio_url AS audioUrl, source, category, mastery, reviews,
+    SELECT id, icelandic, meaning, literal, why, audio_url AS audioUrl, source, category, mastery, reviews,
     complexity, level, correct_streak AS correctStreak, next_review_at AS nextReviewAt,
     translation_status AS translationStatus, review_status AS reviewStatus,
-    admin_notes AS adminNotes, translated_by AS translatedBy, updated_at AS updatedAt
+    admin_notes AS adminNotes, translated_by AS translatedBy, updated_at AS updatedAt, archived_at AS archivedAt
   FROM phrases
 `;
 
@@ -250,14 +254,16 @@ export function getExpression(id: number) {
 export function getAdminExpressions(filters: AdminFilters) {
   const clauses: string[] = [];
   const values: Array<string | number> = [];
-  if (filters.query) {
+  const queryText = filters.query?.trim();
+  if (queryText) {
     clauses.push("(icelandic LIKE ? OR meaning LIKE ? OR literal LIKE ? OR why LIKE ?)");
-    const query = `%${filters.query}%`;
+    const query = `%${queryText}%`;
     values.push(query, query, query, query);
   }
   if (filters.translationStatus) { clauses.push("translation_status = ?"); values.push(filters.translationStatus); }
   if (filters.reviewStatus) { clauses.push("review_status = ?"); values.push(filters.reviewStatus); }
   if (filters.level) { clauses.push("level = ?"); values.push(filters.level); }
+  clauses.push(filters.archived ? "archived_at != ''" : "archived_at = ''");
 
   const sourceFacetWhere = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   const sourceFacetValues = [...values];
@@ -274,7 +280,7 @@ export function getAdminExpressions(filters: AdminFilters) {
   const sources = db.prepare(`SELECT source, COUNT(*) AS count FROM phrases ${sourceFacetWhere} GROUP BY source ORDER BY source`).all(...sourceFacetValues) as { source: string; count: number }[];
   if (filters.source && !sources.some(({ source }) => source === filters.source)) sources.push({ source: filters.source, count: 0 });
   sources.sort((a, b) => a.source.localeCompare(b.source));
-  const { totalLevels } = db.prepare("SELECT MAX(level) AS totalLevels FROM phrases").get() as { totalLevels: number };
+  const { totalLevels } = db.prepare("SELECT MAX(level) AS totalLevels FROM phrases WHERE archived_at = ''").get() as { totalLevels: number };
   return { rows, total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)), sources, totalLevels };
 }
 
@@ -288,24 +294,24 @@ export function getAdminStatistics(): AdminStatistics {
       SUM(CASE WHEN TRIM(literal) != '' THEN 1 ELSE 0 END) AS literal,
       SUM(CASE WHEN TRIM(why) != '' THEN 1 ELSE 0 END) AS why,
       SUM(CASE WHEN TRIM(meaning) != '' AND TRIM(literal) != '' AND TRIM(why) != '' THEN 1 ELSE 0 END) AS complete
-    FROM phrases
+    FROM phrases WHERE archived_at = ''
   `).get() as { total: number; translated: number; approved: number; ready: number; meaning: number; literal: number; why: number; complete: number };
 
-  const translationStatuses = db.prepare("SELECT translation_status AS status, COUNT(*) AS count FROM phrases GROUP BY translation_status ORDER BY count DESC").all() as StatusCount[];
-  const reviewStatuses = db.prepare("SELECT review_status AS status, COUNT(*) AS count FROM phrases GROUP BY review_status ORDER BY count DESC").all() as StatusCount[];
+  const translationStatuses = db.prepare("SELECT translation_status AS status, COUNT(*) AS count FROM phrases WHERE archived_at = '' GROUP BY translation_status ORDER BY count DESC").all() as StatusCount[];
+  const reviewStatuses = db.prepare("SELECT review_status AS status, COUNT(*) AS count FROM phrases WHERE archived_at = '' GROUP BY review_status ORDER BY count DESC").all() as StatusCount[];
   const sources = db.prepare(`
     SELECT source, COUNT(*) AS total,
       SUM(CASE WHEN translation_status IN ('translated', 'reviewed') THEN 1 ELSE 0 END) AS translated,
       SUM(CASE WHEN translation_status = 'reviewed' THEN 1 ELSE 0 END) AS reviewed,
       SUM(CASE WHEN review_status = 'approved' THEN 1 ELSE 0 END) AS approved,
       SUM(CASE WHEN translation_status = 'missing' THEN 1 ELSE 0 END) AS missing
-    FROM phrases GROUP BY source ORDER BY total DESC, source ASC
+    FROM phrases WHERE archived_at = '' GROUP BY source ORDER BY total DESC, source ASC
   `).all() as AdminStatistics["sources"];
   const levels = db.prepare(`
     SELECT level, COUNT(*) AS total,
       SUM(CASE WHEN translation_status IN ('translated', 'reviewed') THEN 1 ELSE 0 END) AS translated,
       SUM(CASE WHEN review_status = 'approved' THEN 1 ELSE 0 END) AS approved
-    FROM phrases GROUP BY level ORDER BY level ASC
+    FROM phrases WHERE archived_at = '' GROUP BY level ORDER BY level ASC
   `).all() as AdminStatistics["levels"];
 
   return {
@@ -365,6 +371,20 @@ export function createAdminExpression(input: ExpressionInput) {
   `).run(input.icelandic, input.meaning, input.meaning, input.literal, input.why, input.audioUrl, input.source, input.category, complexity, translationStatus, input.reviewStatus, input.adminNotes);
   rebalanceLevels();
   return Number(result.lastInsertRowid);
+}
+
+export function archiveExpression(id: number) {
+  db.prepare("UPDATE phrases SET archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+  rebalanceLevels();
+  const { currentLevel } = db.prepare("SELECT current_level AS currentLevel FROM study_state WHERE id = 1").get() as { currentLevel: number };
+  setStudyLevel(currentLevel);
+}
+
+export function unarchiveExpression(id: number) {
+  db.prepare("UPDATE phrases SET archived_at = '', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+  rebalanceLevels();
+  const { currentLevel } = db.prepare("SELECT current_level AS currentLevel FROM study_state WHERE id = 1").get() as { currentLevel: number };
+  setStudyLevel(currentLevel);
 }
 
 export function setExpressionAudio(id: number, audioUrl: string) {

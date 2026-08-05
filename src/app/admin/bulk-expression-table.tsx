@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { translateExpressionsAction, translateOneExpressionAction } from "./actions";
+import { archiveExpressionAction, translateExpressionsAction, translateOneExpressionAction, unarchiveExpressionAction } from "./actions";
+import { ArchiveConfirmation } from "./archive-confirmation";
 import type { Phrase } from "@/lib/db";
 import type { TranslationField } from "@/lib/translation";
 
@@ -14,13 +15,15 @@ const translationFields: Array<{ id: TranslationField; label: string; descriptio
   { id: "why", label: "Why / context", description: "Usage, imagery, or etymology" },
 ];
 
-export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; returnTo: string }) {
+export function BulkExpressionTable({ phrases, returnTo, archived = false }: { phrases: Phrase[]; returnTo: string; archived?: boolean }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [pendingProvider, setPendingProvider] = useState<"openai" | "gemini" | null>(null);
   const [providerChoice, setProviderChoice] = useState<"openai" | "gemini" | null>(null);
   const [completed, setCompleted] = useState(0);
   const [failed, setFailed] = useState(0);
+  const [archivingId, setArchivingId] = useState<number | null>(null);
+  const [confirming, setConfirming] = useState<{ id: number; phrase: string } | null>(null);
   const selectableCount = Math.min(phrases.length, selectionLimit);
   const selectedVisibleCount = phrases.filter((phrase) => selected.has(phrase.id)).length;
   const allVisibleSelected = selectableCount > 0 && selectedVisibleCount === selectableCount;
@@ -64,6 +67,16 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
     router.replace(`${pathname}?${params.toString()}`);
   }
 
+  async function toggleArchive(id: number) {
+    if (archivingId) return;
+    setArchivingId(id);
+    if (archived) await unarchiveExpressionAction(id);
+    else await archiveExpressionAction(id);
+    setArchivingId(null);
+    setConfirming(null);
+    router.refresh();
+  }
+
   return (
     <form action={translateExpressionsAction}>
       <input type="hidden" name="returnTo" value={returnTo} />
@@ -74,7 +87,7 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
           <tbody>{phrases.map((phrase) => {
             const checked = selected.has(phrase.id);
             const disabled = !checked && selected.size >= selectionLimit;
-            return <tr key={phrase.id} className={`border-t border-[#1d4d58]/10 align-top hover:bg-[#d9eeec]/35 ${checked ? "bg-[#b7d86a]/10" : ""}`}><td className="px-5 py-4"><input type="checkbox" aria-label={`Select ${phrase.icelandic}`} checked={checked} disabled={disabled} onChange={() => toggle(phrase.id)} className="h-4 w-4 accent-[#1d4d58] disabled:opacity-30" /></td><td className="w-14 px-2 py-4 text-center align-middle">{phrase.audioUrl && <ListAudioButton audioUrl={phrase.audioUrl} phrase={phrase.icelandic} />}</td><td className="display max-w-sm px-2 py-4 text-lg font-medium">{phrase.icelandic}</td><td className="max-w-sm px-4 py-4 text-[#1d4d58]/75">{phrase.meaning || <span className="italic text-[#78979c]">Not translated</span>}</td><td className="mono px-4 py-4 text-xs">{phrase.level}</td><td className="mono px-4 py-4 text-xs">{phrase.complexity}</td><td className="px-4 py-4 text-xs">{phrase.source}</td><td className="px-4 py-4"><Status value={phrase.translationStatus} /></td><td className="px-4 py-4"><Status value={phrase.reviewStatus} /></td><td className="px-4 py-4 text-right"><Link href={`/admin/${phrase.id}`} className="font-semibold text-[#1d4d58] underline decoration-[#b7d86a] decoration-2 underline-offset-4">Edit</Link></td></tr>;
+            return <tr key={phrase.id} className={`border-t border-[#1d4d58]/10 align-top hover:bg-[#d9eeec]/35 ${checked ? "bg-[#b7d86a]/10" : ""}`}><td className="px-5 py-4"><input type="checkbox" aria-label={`Select ${phrase.icelandic}`} checked={checked} disabled={disabled} onChange={() => toggle(phrase.id)} className="h-4 w-4 accent-[#1d4d58] disabled:opacity-30" /></td><td className="w-14 px-2 py-4 text-center align-middle">{phrase.audioUrl && <ListAudioButton audioUrl={phrase.audioUrl} phrase={phrase.icelandic} />}</td><td className="display max-w-sm px-2 py-4 text-lg font-medium">{phrase.icelandic}</td><td className="max-w-sm px-4 py-4 text-[#1d4d58]/75">{phrase.meaning || <span className="italic text-[#78979c]">Not translated</span>}</td><td className="mono px-4 py-4 text-xs">{phrase.level}</td><td className="mono px-4 py-4 text-xs">{phrase.complexity}</td><td className="px-4 py-4 text-xs">{phrase.source}</td><td className="px-4 py-4"><Status value={phrase.translationStatus} /></td><td className="px-4 py-4"><Status value={phrase.reviewStatus} /></td><td className="px-4 py-4 text-right"><div className="flex items-center justify-end gap-3 whitespace-nowrap"><Link href={`/admin/${phrase.id}`} className="font-semibold text-[#1d4d58] underline decoration-[#b7d86a] decoration-2 underline-offset-4">Edit</Link><button type="button" onClick={() => setConfirming({ id: phrase.id, phrase: phrase.icelandic })} disabled={archivingId !== null} className="text-xs font-semibold text-[#78979c] underline decoration-[#b7d86a] underline-offset-4 hover:text-[#1d4d58] disabled:opacity-40">{archivingId === phrase.id ? "Saving…" : archived ? "Un-archive" : "Archive"}</button></div></td></tr>;
           })}</tbody>
         </table>
       </div>
@@ -84,6 +97,7 @@ export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; 
         {pendingProvider && <BatchProgress count={selected.size} completed={completed} failed={failed} />}
       </div>}
       {providerChoice && <BatchTranslationModal provider={providerChoice} onCancel={() => setProviderChoice(null)} onGenerate={(fields) => { const provider = providerChoice; setProviderChoice(null); void startBatch(provider, fields); }} />}
+      {confirming && <ArchiveConfirmation archived={archived} phrase={confirming.phrase} pending={archivingId !== null} onCancel={() => setConfirming(null)} onConfirm={() => void toggleArchive(confirming.id)} />}
     </form>
   );
 }

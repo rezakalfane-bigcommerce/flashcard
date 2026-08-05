@@ -7,7 +7,9 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import {
   createAdminExpression,
+  archiveExpression,
   getExpression,
+  unarchiveExpression,
   updateTranslationDraft,
   updateExpression,
   setExpressionAudio,
@@ -95,6 +97,24 @@ export async function createExpressionAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/admin");
   redirect(`/admin/${id}?created=1`);
+}
+
+export async function archiveExpressionAction(id: number) {
+  archiveExpression(id);
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/admin/archive");
+  revalidatePath("/admin/statistics");
+  return { ok: true };
+}
+
+export async function unarchiveExpressionAction(id: number) {
+  unarchiveExpression(id);
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/admin/archive");
+  revalidatePath("/admin/statistics");
+  return { ok: true };
 }
 
 export async function translateExpressionAction(formData: FormData) {

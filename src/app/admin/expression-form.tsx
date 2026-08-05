@@ -3,6 +3,7 @@ import type { Phrase } from "@/lib/db";
 import { createExpressionAction, saveExpressionAction } from "./actions";
 import { TranslationModal } from "./translation-modal";
 import type { TranslationField } from "@/lib/translation";
+import { ArchiveControl } from "./archive-control";
 
 type Notice = { saved?: string; created?: string; generated?: string; error?: string };
 
@@ -10,7 +11,7 @@ export function ExpressionForm({ phrase, notice = {} }: { phrase?: Phrase; notic
   const isNew = !phrase;
   return (
     <main className="min-h-screen bg-[#edf4f2] px-4 py-6 text-[#15292d] md:px-8">
-      <header className="mx-auto flex max-w-6xl items-end justify-between border-b border-[#1d4d58]/20 pb-6"><div><Link href="/admin" className="mono text-xs text-[#78979c] hover:text-[#1d4d58]">← All expressions</Link><p className="mono mt-5 text-[10px] uppercase tracking-[.22em] text-[#78979c]">{isNew ? "New database record" : `Expression ${phrase.id}`}</p><h1 className="display mt-1 max-w-4xl text-4xl sm:text-5xl">{isNew ? "Add an expression" : phrase.icelandic}</h1></div>{phrase && <div className="hidden text-right sm:block"><p className="mono text-xs">Level {phrase.level} · Complexity {phrase.complexity}</p><p className="mt-1 text-xs text-[#78979c]">Updated {new Date(phrase.updatedAt).toLocaleDateString()}</p></div>}</header>
+      <header className="mx-auto flex max-w-6xl items-end justify-between gap-5 border-b border-[#1d4d58]/20 pb-6"><div><Link href={phrase?.archivedAt ? "/admin/archive" : "/admin"} className="mono text-xs text-[#78979c] hover:text-[#1d4d58]">← {phrase?.archivedAt ? "Archived expressions" : "All expressions"}</Link><p className="mono mt-5 text-[10px] uppercase tracking-[.22em] text-[#78979c]">{isNew ? "New database record" : `Expression ${phrase.id}`}</p><h1 className="display mt-1 max-w-4xl text-4xl sm:text-5xl">{isNew ? "Add an expression" : phrase.icelandic}</h1></div>{phrase && <div className="flex flex-wrap items-end justify-end gap-4 text-right"><div><p className="mono text-xs">Level {phrase.level} · Complexity {phrase.complexity}</p><p className="mt-1 text-xs text-[#78979c]">Updated {new Date(phrase.updatedAt).toLocaleDateString()}</p></div><ArchiveControl id={phrase.id} phrase={phrase.icelandic} archived={Boolean(phrase.archivedAt)} /></div>}</header>
       <div className="mx-auto grid max-w-6xl gap-6 py-7 lg:grid-cols-[1fr_310px]">
         <section className="rounded-3xl border border-[#1d4d58]/15 bg-white p-6 shadow-sm sm:p-8">
           {(notice.saved || notice.created || notice.generated) && <p className="mb-6 rounded-xl bg-[#b7d86a]/25 px-4 py-3 text-sm font-semibold">{notice.generated ? `Draft generated with ${notice.generated}. Review before approving.` : "Expression saved."}</p>}

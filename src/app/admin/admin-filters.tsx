@@ -19,7 +19,7 @@ type Props = {
   totalLevels: number;
 };
 
-export function AdminFilters({ initial, sources, totalLevels }: Props) {
+export function AdminFilters({ initial, sources, totalLevels, basePath = "/admin" }: Props & { basePath?: string }) {
   const router = useRouter();
 
   useEffect(() => {
@@ -27,8 +27,8 @@ export function AdminFilters({ initial, sources, totalLevels }: Props) {
     current.delete("page");
     if (current.size > 0) return;
     const remembered = window.localStorage.getItem(storageKey);
-    if (remembered) router.replace(`/admin?${remembered}`);
-  }, [router]);
+    if (remembered) router.replace(`${basePath}?${remembered}`);
+  }, [basePath, router]);
 
   function remember(event: React.FormEvent<HTMLFormElement>) {
     const values = new FormData(event.currentTarget);
@@ -42,7 +42,7 @@ export function AdminFilters({ initial, sources, totalLevels }: Props) {
 
   function clearFilters() {
     window.localStorage.removeItem(storageKey);
-    router.push("/admin");
+    router.push(basePath);
   }
 
   return (

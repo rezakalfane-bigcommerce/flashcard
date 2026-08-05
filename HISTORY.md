@@ -490,3 +490,55 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 - Changed quiz mode to a single-column layout with a stable full-width, max-width panel.
 - Prevented question and answer text from changing the quiz container width.
+
+## 2026-08-05 — Archive expressions
+
+### Prompt
+
+> In the list and in the form, add an "Archive" button, to move expressions to an Archive list, accessible through an Archive page. Archive page shows archived expressions the same way with an "Un-archive" button on the list and detail form
+
+### Follow-up
+
+> Archived expressions are not used in flash cards or quiz
+
+> By the way trim expressions in the Search box to improve search
+
+### Summary
+
+- Added archive state and migration to SQLite.
+- Added `/admin/archive`, list and detail archive/unarchive controls, and an Archive link from the admin workspace.
+- Excluded archived expressions from flash cards, quizzes, level balancing, and statistics.
+- Trimmed search values before querying and persisting filters.
+
+## 2026-08-05 — Confirm archive actions
+
+### Prompt
+
+> Add a confirmation modal when archiving / un archiving
+
+### Summary
+
+- Added a shared confirmation dialog for Archive and Un-archive actions in both list and detail views.
+- The dialog names the expression and explains how archiving affects study availability.
+
+### Follow-up
+
+> Actions should be on the same line in the list views
+
+### Summary
+
+- Kept Edit and Archive/Un-archive controls on one horizontal action row.
+
+## 2026-08-05 — Archive validation and backup
+
+### Prompts
+
+> validate phase
+
+> backup database
+
+### Summary
+
+- Passed lint, TypeScript, production build, and diff checks.
+- Confirmed `/admin/archive` is included in the production route set.
+- Created and integrity-checked `data/backup/phrases-20260805T231208Z.db` with 1,380 phrases and both `audio_url` and `archived_at` schema columns.

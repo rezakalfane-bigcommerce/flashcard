@@ -7,7 +7,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function value(params: Record<string, string | string[] | undefined>, key: string) {
   const current = params[key];
-  return Array.isArray(current) ? current[0] ?? "" : current ?? "";
+  return (Array.isArray(current) ? current[0] ?? "" : current ?? "").trim();
 }
 
 export default async function AdminPage({ searchParams }: { searchParams: SearchParams }) {
@@ -37,7 +37,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     <main className="min-h-screen bg-[#edf4f2] px-4 py-6 text-[#15292d] md:px-8">
       <header className="mx-auto flex max-w-[1500px] flex-wrap items-end justify-between gap-5 border-b border-[#1d4d58]/20 pb-6">
         <div><Link href="/" className="mono text-xs text-[#78979c] hover:text-[#1d4d58]">← Study deck</Link><p className="mono mt-5 text-[10px] uppercase tracking-[.22em] text-[#78979c]">Database workshop</p><h1 className="display mt-1 text-5xl">Expression admin</h1></div>
-        <div className="flex items-center gap-3"><p className="mono text-xs text-[#78979c]">{data.total.toLocaleString()} results</p><Link href="/admin/statistics" className="rounded-full border border-[#1d4d58]/20 px-5 py-3 text-sm font-semibold hover:bg-white">Statistics</Link><Link href="/admin/new" className="rounded-full bg-[#15292d] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1d4d58]">+ New expression</Link></div>
+        <div className="flex items-center gap-3"><p className="mono text-xs text-[#78979c]">{data.total.toLocaleString()} results</p><Link href="/admin/archive" className="rounded-full border border-[#1d4d58]/20 px-5 py-3 text-sm font-semibold hover:bg-white">Archive</Link><Link href="/admin/statistics" className="rounded-full border border-[#1d4d58]/20 px-5 py-3 text-sm font-semibold hover:bg-white">Statistics</Link><Link href="/admin/new" className="rounded-full bg-[#15292d] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1d4d58]">+ New expression</Link></div>
       </header>
 
       <section className="mx-auto max-w-[1500px] py-6">
