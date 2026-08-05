@@ -121,6 +121,14 @@ This resets those records to their source meaning, literal translation, context,
 
 SQLite is intentionally local in this project. On serverless hosting, an instance filesystem is ephemeral, so production persistence requires a durable database service or a host with a persistent volume.
 
+Create a timestamped SQLite backup under `data/backup/` with:
+
+```bash
+npm run phrases:backup
+```
+
+Backups are local and ignored by Git. Copy them to your own protected storage for real disaster recovery.
+
 ## Design
 
 The interface is inspired by an Icelandic field notebook: glacial blue, volcanic ink, lichen green, and a restrained topographic texture. The large two-sided study card is the central interaction, with `Newsreader` for phrase display and Geist for interface text.

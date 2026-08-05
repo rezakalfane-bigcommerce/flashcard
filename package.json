@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "phrases:import": "node scripts/import-phrases.mjs",
-    "phrases:restore-originals": "node scripts/restore-originals.mjs"
+    "phrases:restore-originals": "node scripts/restore-originals.mjs",
+    "phrases:backup": "node scripts/backup-database.mjs"
   },
   "dependencies": {
     "ai": "^6.0.242",

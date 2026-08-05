@@ -345,3 +345,16 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Added `phrases:restore-originals` for a repeatable transactional restore.
 - Restored original meaning, literal translation, context, source, and category values.
 - Reset the records to `translated` / `unreviewed` and cleared AI attribution and admin notes.
+
+## 2026-08-05 — Database backup
+
+### Prompt
+
+> Can you backup the database (use a folder in data/backup maybe?)
+
+### Summary
+
+- Created `data/backup/phrases-20260805-194240.db` from the live SQLite database using SQLite's online backup command.
+- Verified `PRAGMA integrity_check` returns `ok` and the backup contains 1,380 expressions, 5 sources, and 69 levels.
+- Added `npm run phrases:backup` for repeatable timestamped backups.
+- Ignored backup database and WAL files so local backups are not accidentally committed.

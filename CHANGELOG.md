@@ -95,3 +95,8 @@ All notable changes and repository commits are documented here. This project fol
 
 - Adds a transactional `phrases:restore-originals` command for the 20 requested expressions.
 - Restores tracked source values and resets those records to imported `translated` / `unreviewed` state.
+
+### `chore: add SQLite backup command`
+
+- Adds `npm run phrases:backup` to create timestamped backups under `data/backup/`.
+- Verifies the initial backup with SQLite integrity and collection-count checks; local backup files remain ignored by Git.
