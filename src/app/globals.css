@@ -1,26 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --snow: #f4f8f7;
+  --ice: #d9eeec;
+  --fjord: #1d4d58;
+  --ink: #15292d;
+  --lichen: #b7d86a;
+  --mist: #78979c;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+* { box-sizing: border-box; }
+html { background: var(--snow); }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(183, 216, 106, .22), transparent 26rem),
+    linear-gradient(135deg, transparent 0 49.5%, rgba(29,77,88,.035) 49.5% 50.5%, transparent 50.5%) 0 0 / 32px 32px,
+    var(--snow);
+  font-family: var(--font-geist), sans-serif;
+}
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+
+.display { font-family: var(--font-display), Georgia, serif; }
+.mono { font-family: var(--font-mono), monospace; }
+.card-scene { perspective: 1200px; }
+.card-inner {
+  transform-style: preserve-3d;
+  transition: transform 650ms cubic-bezier(.2,.8,.2,1);
+}
+.card-inner.flipped { transform: rotateY(180deg); }
+.card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.card-back { transform: rotateY(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
