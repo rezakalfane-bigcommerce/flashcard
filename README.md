@@ -12,6 +12,7 @@ Orðspor is a small, local-first flash-card app for learning useful Icelandic ph
 - Adds custom phrases through an accessible modal form.
 - Persists phrases and study progress in a local SQLite database.
 - Supports the Space key for flipping cards and reduced-motion preferences.
+- Offers a 20-question Quiz mode for the active level; 80% unlocks the next level.
 
 ## Tech stack
 

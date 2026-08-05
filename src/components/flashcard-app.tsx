@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { addPhrase, changeLevel, saveReview } from "@/app/actions";
 import type { DashboardData } from "@/lib/db";
+import { QuizMode } from "@/components/quiz-mode";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -30,19 +31,20 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [quizMode, setQuizMode] = useState(false);
   const [isPending, startTransition] = useTransition();
   const phrase = initialData.phrases[index % initialData.phrases.length];
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.code === "Space" && !adding) {
+      if (event.code === "Space" && !adding && !quizMode) {
         event.preventDefault();
         setFlipped((value) => !value);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [adding]);
+  }, [adding, quizMode]);
 
   function rate(remembered: boolean) {
     if (!phrase || isPending) return;
@@ -73,7 +75,7 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
       </header>
 
       <section className="mx-auto grid max-w-6xl gap-10 py-10 lg:grid-cols-[1fr_300px] lg:py-16">
-        <div>
+        {quizMode ? <QuizMode phrases={initialData.phrases} level={initialData.study.currentLevel} totalLevels={initialData.study.totalLevels} onExit={() => setQuizMode(false)} onPass={() => goToLevel(initialData.study.currentLevel + 1)} /> : <div>
           <div className="mb-6 flex items-end justify-between">
             <div>
               <p className="mono mb-2 text-[10px] uppercase tracking-[.24em] text-[#78979c]">Today’s practice</p>
@@ -86,6 +88,7 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
                 <button type="button" aria-label="Next level" title="Next level (testing)" onClick={() => goToLevel(initialData.study.currentLevel + 1)} disabled={isPending || initialData.study.currentLevel === initialData.study.totalLevels} className="grid h-8 w-8 place-items-center rounded-full border border-[#1d4d58]/20 text-[#1d4d58] transition hover:bg-[#d9eeec] disabled:cursor-not-allowed disabled:opacity-30">→</button>
               </div>
               <span className="mt-1 block text-xs text-[#78979c]">{initialData.study.levelMastered} of 20 progressing · testing controls</span>
+              <button type="button" onClick={() => setQuizMode(true)} className="mt-3 rounded-full border border-[#1d4d58]/20 bg-white/60 px-4 py-2 text-xs font-semibold text-[#1d4d58] transition hover:bg-[#d9eeec]">Quiz this level</button>
             </div>
           </div>
 
@@ -126,9 +129,9 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
             <button onClick={() => rate(false)} disabled={isPending} className="rounded-2xl border border-[#1d4d58]/20 bg-white/70 py-4 font-semibold text-[#1d4d58] hover:bg-white disabled:cursor-wait">Still learning</button>
             <button onClick={() => rate(true)} disabled={isPending} className="rounded-2xl bg-[#b7d86a] py-4 font-semibold text-[#15292d] hover:bg-[#c5e479] disabled:cursor-wait">I remembered</button>
           </div>
-        </div>
+        </div>}
 
-        <aside className="flex flex-col gap-5 lg:pt-20">
+        {!quizMode && <aside className="flex flex-col gap-5 lg:pt-20">
           <div className="rounded-3xl border border-[#1d4d58]/15 bg-white/55 p-6 backdrop-blur">
             <p className="mono text-[10px] uppercase tracking-[.2em] text-[#78979c]">Your notebook</p>
             <div className="mt-6 grid grid-cols-3 gap-3 lg:grid-cols-1">
@@ -142,7 +145,7 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
             <p className="mt-2 text-sm leading-6 text-white/60">Reveal the meaning, then mark what stuck. Difficult phrases circle back first.</p>
             <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#b7d86a]" style={{ width: `${Math.min(100, (initialData.stats.mastered / Math.max(1, initialData.stats.total)) * 100)}%` }} /></div>
           </div>
-        </aside>
+        </aside>}
       </section>
 
       {adding && <AddPhraseModal close={() => setAdding(false)} />}

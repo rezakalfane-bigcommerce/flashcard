@@ -466,3 +466,16 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 - Added a dedicated Audio column to the admin expression table.
 - Centered the play button consistently without shifting expression text.
+
+## 2026-08-05 — Level quiz mode
+
+### Prompt
+
+> Add a Quiz mode to test the user on the 20 expressions of his level. Use multiple choices questions (the one correct and 2 others from the same level). Users then get a score and pass to next level if >= 80%
+
+### Summary
+
+- Added a Quiz this level entry point to the study deck.
+- Generates 20 randomized multiple-choice questions with one correct meaning and two same-level distractors.
+- Shows immediate answer feedback and a final percentage score.
+- Requires at least 80% to unlock and advance to the next persisted level.

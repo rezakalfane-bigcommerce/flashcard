@@ -144,3 +144,8 @@ All notable changes and repository commits are documented here. This project fol
 ### `fix: align audio controls in expression list`
 
 - Gives audio controls their own centered table column for consistent row alignment.
+
+### `feat: add level quiz mode`
+
+- Adds 20-question multiple-choice quizzes for the active level.
+- Uses two distractors from the same level, gives immediate feedback, and requires 80% to advance.
