@@ -332,3 +332,16 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Limited each batch to 20 expressions and processed requests three at a time to reduce provider pressure and runaway cost.
 - Stored successful generations as drafts requiring editorial review, while leaving failed records unchanged.
 - Preserved active filters and pagination after processing and displayed success and failure totals.
+
+## 2026-08-05 — Restore original translations
+
+### Prompt
+
+> I've translater already translated ones, can you re-import original values for these: [20 expressions listed in the prompt]
+
+### Summary
+
+- Matched all 20 requested expressions against the tracked `data/phrases.json` source.
+- Added `phrases:restore-originals` for a repeatable transactional restore.
+- Restored original meaning, literal translation, context, source, and category values.
+- Reset the records to `translated` / `unreviewed` and cleared AI attribution and admin notes.

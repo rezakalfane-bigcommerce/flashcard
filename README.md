@@ -111,6 +111,14 @@ The importer validates the headers and replaces the current phrase collection in
 npm run phrases:import -- path/to/phrases.tsv "Another source"
 ```
 
+To restore the tracked originals for the 20-record correction set:
+
+```bash
+npm run phrases:restore-originals
+```
+
+This resets those records to their source meaning, literal translation, context, source, and category, with `translated` / `unreviewed` editorial status and no AI attribution.
+
 SQLite is intentionally local in this project. On serverless hosting, an instance filesystem is ephemeral, so production persistence requires a durable database service or a host with a persistent volume.
 
 ## Design

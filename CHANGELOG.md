@@ -88,5 +88,10 @@ All notable changes and repository commits are documented here. This project fol
 ### `feat: add bulk expression translation`
 
 - Adds page-level multi-selection and select-visible controls to the expression list.
-- Sends up to 20 selected records to OpenAI or Gemini in bounded concurrent groups and stores successful results as drafts requiring review.
+- Sends up to 50 selected records to OpenAI or Gemini in bounded concurrent groups and stores successful results as drafts requiring review.
 - Preserves active filters after processing and reports successful and failed records without overwriting failures.
+
+### `fix: restore original values for translated records`
+
+- Adds a transactional `phrases:restore-originals` command for the 20 requested expressions.
+- Restores tracked source values and resets those records to imported `translated` / `unreviewed` state.

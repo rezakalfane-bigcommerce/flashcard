@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "phrases:import": "node scripts/import-phrases.mjs"
+    "phrases:import": "node scripts/import-phrases.mjs",
+    "phrases:restore-originals": "node scripts/restore-originals.mjs"
   },
   "dependencies": {
     "ai": "^6.0.242",

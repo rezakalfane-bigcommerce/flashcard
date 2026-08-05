@@ -79,7 +79,7 @@ export async function translateExpressionAction(formData: FormData) {
 export async function translateExpressionsAction(formData: FormData) {
   const provider = String(formData.get("provider")) as TranslationProvider;
   const requestedIds = formData.getAll("ids").map(Number).filter((id) => Number.isInteger(id) && id > 0);
-  const ids = [...new Set(requestedIds)].slice(0, 20);
+  const ids = [...new Set(requestedIds)].slice(0, 50);
   const rawReturnTo = String(formData.get("returnTo") ?? "/admin");
   const returnTo = rawReturnTo === "/admin" || rawReturnTo.startsWith("/admin?") || rawReturnTo.startsWith("/admin/") ? rawReturnTo : "/admin";
 

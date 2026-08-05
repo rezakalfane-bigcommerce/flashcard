@@ -6,7 +6,7 @@ import { useFormStatus } from "react-dom";
 import { translateExpressionsAction } from "./actions";
 import type { Phrase } from "@/lib/db";
 
-const selectionLimit = 20;
+const selectionLimit = 50;
 
 export function BulkExpressionTable({ phrases, returnTo }: { phrases: Phrase[]; returnTo: string }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
