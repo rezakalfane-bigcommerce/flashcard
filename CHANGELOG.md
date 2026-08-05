@@ -125,3 +125,8 @@ All notable changes and repository commits are documented here. This project fol
 
 - Remounts the admin filter form when URL-derived filters change.
 - Ensures active translation, review, level, source, search, and sort values are visibly selected.
+
+### `merge: validate admin translation workflow`
+
+- Validated lint, TypeScript, production build, and diff integrity.
+- Merged the feature branch into `main`.

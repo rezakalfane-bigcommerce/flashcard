@@ -420,3 +420,15 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 - Remounts the admin filter form whenever URL-derived filter values change.
 - Keeps dropdown labels synchronized with the active query after client-side navigation.
+
+## 2026-08-05 — Validation phase
+
+### Prompt
+
+> You can validate that phase
+
+### Summary
+
+- Ran lint, TypeScript validation, production build, and whitespace checks successfully.
+- Merged the validated feature branch into `main`.
+- Browser-level verification was unavailable because no browser connector was available and the isolated command process could not reach the local dev server.
