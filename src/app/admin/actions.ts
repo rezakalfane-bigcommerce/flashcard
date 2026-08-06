@@ -248,6 +248,42 @@ export async function translateOneExpressionAction(id: number, provider: Transla
   }
 }
 
+export async function inviteUserAction(formData: FormData) {
+  await requireAdmin();
+  const email = text(formData, "email").toLowerCase();
+  if (!email) redirect("/admin/users?error=Email+is+required");
+  const client = await clerkClient();
+  try {
+    await client.invitations.createInvitation({ emailAddress: email });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to invite user";
+    redirect(`/admin/users?error=${encodeURIComponent(message.slice(0, 180))}`);
+  }
+  revalidatePath("/admin/users");
+  redirect("/admin/users?invited=1");
+}
+
+export async function reinviteUserAction(formData: FormData) {
+  await requireAdmin();
+  const invitationId = String(formData.get("invitationId") ?? "");
+  const email = text(formData, "email");
+  if (!invitationId || !email) throw new Error("Invitation not found");
+  const client = await clerkClient();
+  try {
+    await client.invitations.revokeInvitation(invitationId);
+  } catch {
+    // Already revoked or expired; still send a fresh invitation below.
+  }
+  try {
+    await client.invitations.createInvitation({ emailAddress: email });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to resend invitation";
+    redirect(`/admin/users?error=${encodeURIComponent(message.slice(0, 180))}`);
+  }
+  revalidatePath("/admin/users");
+  redirect("/admin/users?resent=1");
+}
+
 export async function setUserApprovalAction(formData: FormData) {
   const access = await requireAdmin();
   const userId = String(formData.get("userId") ?? "");
