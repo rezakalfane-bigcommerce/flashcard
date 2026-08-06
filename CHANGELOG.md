@@ -293,3 +293,18 @@ All notable changes and repository commits are documented here. This project fol
 
 - Removes the explicit `encType` from the function-action expression form.
 - Preserves multipart file submission through React’s Server Action handling.
+
+### `feat: navigate and preview complexity while editing`
+
+- Adds previous/next controls beside Archive on expression forms.
+- Warns before navigating away with unsaved edits.
+- Recalculates the complexity score live while editing the Icelandic expression.
+
+### `feat: add edit navigation feedback`
+
+- Shows a spinner while loading the previous or next expression.
+- Replaces native unsaved-change confirmation with a styled, Escape-dismissible modal.
+
+### `fix: lock editor during navigation`
+
+- Disables editor fields, Save changes, and Archive while navigating between expressions.
