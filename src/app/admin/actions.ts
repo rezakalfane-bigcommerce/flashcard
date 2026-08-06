@@ -18,6 +18,9 @@ import {
   type TranslationStatus,
 } from "@/lib/db";
 import { generateTranslationDraft, translationFields, type TranslationField, type TranslationProvider } from "@/lib/translation";
+import { requireAdmin } from "@/lib/auth";
+import { clerkClient } from "@clerk/nextjs/server";
+import { del as deleteBlob, put } from "@vercel/blob";
 
 const translationStatuses = new Set<TranslationStatus>(["missing", "partly_missing", "draft", "translated", "reviewed"]);
 const reviewStatuses = new Set<ReviewStatus>(["unreviewed", "needs_review", "approved", "rejected"]);
@@ -45,6 +48,14 @@ async function saveAudioFile(id: number, file: File) {
 }
 
 async function saveAudioBytes(id: number, bytes: Buffer, extension = ".mp3") {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const blob = await put(`expressions/${id}/${randomUUID()}${extension}`, bytes, {
+      access: "public",
+      addRandomSuffix: false,
+      contentType: extension === ".mp3" ? "audio/mpeg" : `audio/${extension.slice(1)}`,
+    });
+    return blob.url;
+  }
   const directory = path.join(process.cwd(), "public", "audio");
   await fs.mkdir(directory, { recursive: true });
   const filename = `${id}-${randomUUID()}${extension}`;
@@ -53,6 +64,16 @@ async function saveAudioBytes(id: number, bytes: Buffer, extension = ".mp3") {
 }
 
 async function removeAudioFile(audioUrl: string) {
+  if (audioUrl.startsWith("http")) {
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        await deleteBlob(audioUrl);
+      } catch {
+        // The database reference is still removed if a previously deleted blob is missing.
+      }
+    }
+    return;
+  }
   if (!audioUrl.startsWith("/audio/")) return;
   await fs.rm(path.join(process.cwd(), "public", audioUrl.slice("/audio/".length)), { force: true });
 }
@@ -75,8 +96,9 @@ function expressionInput(formData: FormData): ExpressionInput {
 }
 
 export async function saveExpressionAction(formData: FormData) {
+  await requireAdmin();
   const id = Number(formData.get("id"));
-  const existing = getExpression(id);
+  const existing = await getExpression(id);
   const input = expressionInput(formData);
   if (!input.icelandic) throw new Error("The Icelandic expression is required.");
   const oldAudioUrl = existing?.audioUrl ?? "";
@@ -85,7 +107,7 @@ export async function saveExpressionAction(formData: FormData) {
   const audio = formData.get("audio");
   if (audio instanceof File && audio.size > 0) audioUrl = await saveAudioFile(id, audio);
   input.audioUrl = audioUrl;
-  updateExpression(id, input);
+  await updateExpression(id, input);
   if (oldAudioUrl && oldAudioUrl !== audioUrl) await removeAudioFile(oldAudioUrl);
   revalidatePath("/");
   revalidatePath("/admin");
@@ -93,18 +115,20 @@ export async function saveExpressionAction(formData: FormData) {
 }
 
 export async function createExpressionAction(formData: FormData) {
+  await requireAdmin();
   const input = expressionInput(formData);
   if (!input.icelandic) throw new Error("The Icelandic expression is required.");
-  const id = createAdminExpression(input);
+  const id = await createAdminExpression(input);
   const audio = formData.get("audio");
-  if (audio instanceof File && audio.size > 0) setExpressionAudio(id, await saveAudioFile(id, audio));
+  if (audio instanceof File && audio.size > 0) await setExpressionAudio(id, await saveAudioFile(id, audio));
   revalidatePath("/");
   revalidatePath("/admin");
   redirect(`/admin/${id}?created=1`);
 }
 
 export async function archiveExpressionAction(id: number) {
-  archiveExpression(id);
+  await requireAdmin();
+  await archiveExpression(id);
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/archive");
@@ -113,7 +137,8 @@ export async function archiveExpressionAction(id: number) {
 }
 
 export async function unarchiveExpressionAction(id: number) {
-  unarchiveExpression(id);
+  await requireAdmin();
+  await unarchiveExpression(id);
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/archive");
@@ -122,8 +147,9 @@ export async function unarchiveExpressionAction(id: number) {
 }
 
 export async function generateAudioAction(id: number) {
+  await requireAdmin();
   const apiKey = process.env.GOOGLE_TTS_API_KEY?.trim();
-  const phrase = getExpression(id);
+  const phrase = await getExpression(id);
   if (!apiKey) return { ok: false, error: "GOOGLE_TTS_API_KEY is not configured." };
   if (!phrase) return { ok: false, error: "Expression not found." };
 
@@ -142,7 +168,7 @@ export async function generateAudioAction(id: number) {
     const bytes = Buffer.from(payload.audioContent, "base64");
     if (bytes.length > 15 * 1024 * 1024) return { ok: false, error: "Generated audio is larger than 15 MB." };
     const audioUrl = await saveAudioBytes(id, bytes);
-    setExpressionAudio(id, audioUrl);
+    await setExpressionAudio(id, audioUrl);
     if (phrase.audioUrl && phrase.audioUrl !== audioUrl) await removeAudioFile(phrase.audioUrl);
     revalidatePath("/");
     revalidatePath("/admin");
@@ -155,16 +181,17 @@ export async function generateAudioAction(id: number) {
 }
 
 export async function translateExpressionAction(formData: FormData) {
+  await requireAdmin();
   const id = Number(formData.get("id"));
   const provider = String(formData.get("provider")) as TranslationProvider;
   const fields = formData.getAll("fields").filter((field): field is TranslationField => typeof field === "string" && translationFields.includes(field as TranslationField));
   if (provider !== "openai" && provider !== "gemini") redirect(`/admin/${id}?error=Invalid+AI+provider`);
-  const phrase = getExpression(id);
+  const phrase = await getExpression(id);
   if (!phrase) redirect("/admin?error=Expression+not+found");
 
   try {
     const draft = await generateTranslationDraft(phrase.icelandic, provider, fields.length ? fields : translationFields);
-    updateTranslationDraft(id, draft, draft.model);
+    await updateTranslationDraft(id, draft, draft.model);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Translation failed";
     redirect(`/admin/${id}?error=${encodeURIComponent(message.slice(0, 180))}`);
@@ -177,6 +204,7 @@ export async function translateExpressionAction(formData: FormData) {
 }
 
 export async function translateExpressionsAction(formData: FormData) {
+  await requireAdmin();
   const provider = String(formData.get("provider")) as TranslationProvider;
   const requestedIds = formData.getAll("ids").map(Number).filter((id) => Number.isInteger(id) && id > 0);
   const ids = [...new Set(requestedIds)].slice(0, 50);
@@ -191,10 +219,10 @@ export async function translateExpressionsAction(formData: FormData) {
   for (let offset = 0; offset < ids.length; offset += 3) {
     const group = ids.slice(offset, offset + 3);
     const results = await Promise.allSettled(group.map(async (id) => {
-      const phrase = getExpression(id);
+      const phrase = await getExpression(id);
       if (!phrase) throw new Error(`Expression ${id} not found`);
       const draft = await generateTranslationDraft(phrase.icelandic, provider);
-      updateTranslationDraft(id, draft, draft.model);
+      await updateTranslationDraft(id, draft, draft.model);
     }));
     translated += results.filter((result) => result.status === "fulfilled").length;
     failed += results.filter((result) => result.status === "rejected").length;
@@ -207,16 +235,28 @@ export async function translateExpressionsAction(formData: FormData) {
 }
 
 export async function translateOneExpressionAction(id: number, provider: TranslationProvider, fields: TranslationField[] = translationFields) {
+  await requireAdmin();
   if (provider !== "openai" && provider !== "gemini") return { ok: false, error: "Invalid AI provider" };
-  const phrase = getExpression(id);
+  const phrase = await getExpression(id);
   if (!phrase) return { ok: false, error: "Expression not found" };
   try {
     const draft = await generateTranslationDraft(phrase.icelandic, provider, fields.length ? fields : translationFields);
-    updateTranslationDraft(id, draft, draft.model);
+    await updateTranslationDraft(id, draft, draft.model);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message.slice(0, 180) : "Translation failed" };
   }
+}
+
+export async function setUserApprovalAction(formData: FormData) {
+  const access = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  const approved = String(formData.get("approved") ?? "") === "true";
+  if (!userId) throw new Error("User not found");
+  if (userId === access.userId && !approved) throw new Error("You cannot revoke your own access.");
+  const client = await clerkClient();
+  await client.users.updateUserMetadata(userId, { publicMetadata: { approved } });
+  revalidatePath("/admin/users");
 }
 
 function withBatchResult(returnTo: string, translated: number, failed: number, error?: string) {

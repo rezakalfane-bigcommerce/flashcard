@@ -6,6 +6,7 @@ import type { DashboardData } from "@/lib/db";
 import { QuizMode } from "@/components/quiz-mode";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { UserButton } from "@clerk/nextjs";
 
 function pickWeightedIndex(phrases: DashboardData["phrases"], excludeId = -1) {
   const now = Date.now();
@@ -26,7 +27,7 @@ function pickWeightedIndex(phrases: DashboardData["phrases"], excludeId = -1) {
   return weighted.at(-1)?.index ?? 0;
 }
 
-export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
+export function FlashcardApp({ initialData, canChangeLevel = false }: { initialData: DashboardData; canChangeLevel?: boolean }) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -71,7 +72,7 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
           <span className="display text-3xl font-semibold tracking-tight text-[#1d4d58]">Orðspor</span>
           <span className="mono hidden text-[10px] uppercase tracking-[.22em] text-[#78979c] sm:inline">Icelandic, remembered</span>
         </div>
-        <div className="flex items-center gap-2"><Link href="/admin" className="rounded-full px-4 py-2.5 text-sm font-semibold text-[#1d4d58] hover:bg-[#d9eeec]">Admin</Link><button onClick={() => setAdding(true)} className="rounded-full bg-[#15292d] px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#1d4d58] focus:outline-none focus:ring-2 focus:ring-[#b7d86a] focus:ring-offset-2">+ Add phrase</button></div>
+        <div className="flex items-center gap-2">{canChangeLevel && <><Link href="/admin" className="rounded-full px-4 py-2.5 text-sm font-semibold text-[#1d4d58] hover:bg-[#d9eeec]">Admin</Link><button onClick={() => setAdding(true)} className="rounded-full bg-[#15292d] px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#1d4d58] focus:outline-none focus:ring-2 focus:ring-[#b7d86a] focus:ring-offset-2">+ Add phrase</button></>}<UserButton /></div>
       </header>
 
       <section className={`mx-auto grid max-w-6xl gap-10 py-10 ${quizMode ? "grid-cols-1 lg:py-16" : "lg:grid-cols-[1fr_300px] lg:py-16"}`}>
@@ -82,12 +83,12 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
               <h1 className="display text-4xl leading-none sm:text-5xl">Say it out loud.</h1>
             </div>
             <div className="text-right">
-              <div className="flex items-center justify-end gap-2">
-                <button type="button" aria-label="Previous level" title="Previous level (testing)" onClick={() => goToLevel(initialData.study.currentLevel - 1)} disabled={isPending || initialData.study.currentLevel === 1} className="grid h-8 w-8 place-items-center rounded-full border border-[#1d4d58]/20 text-[#1d4d58] transition hover:bg-[#d9eeec] disabled:cursor-not-allowed disabled:opacity-30">←</button>
+              {canChangeLevel && <div className="flex items-center justify-end gap-2">
+                <button type="button" aria-label="Previous level" title="Previous level (admin testing)" onClick={() => goToLevel(initialData.study.currentLevel - 1)} disabled={isPending || initialData.study.currentLevel === 1} className="grid h-8 w-8 place-items-center rounded-full border border-[#1d4d58]/20 text-[#1d4d58] transition hover:bg-[#d9eeec] disabled:cursor-not-allowed disabled:opacity-30">←</button>
                 <span className="mono text-xs font-semibold text-[#1d4d58]">Level {String(initialData.study.currentLevel).padStart(2, "0")} / {String(initialData.study.totalLevels).padStart(2, "0")}</span>
-                <button type="button" aria-label="Next level" title="Next level (testing)" onClick={() => goToLevel(initialData.study.currentLevel + 1)} disabled={isPending || initialData.study.currentLevel === initialData.study.totalLevels} className="grid h-8 w-8 place-items-center rounded-full border border-[#1d4d58]/20 text-[#1d4d58] transition hover:bg-[#d9eeec] disabled:cursor-not-allowed disabled:opacity-30">→</button>
-              </div>
-              <span className="mt-1 block text-xs text-[#78979c]">{initialData.study.levelMastered} of 20 progressing · testing controls</span>
+                <button type="button" aria-label="Next level" title="Next level (admin testing)" onClick={() => goToLevel(initialData.study.currentLevel + 1)} disabled={isPending || initialData.study.currentLevel === initialData.study.totalLevels} className="grid h-8 w-8 place-items-center rounded-full border border-[#1d4d58]/20 text-[#1d4d58] transition hover:bg-[#d9eeec] disabled:cursor-not-allowed disabled:opacity-30">→</button>
+              </div>}
+              <span className="mt-1 block text-xs text-[#78979c]">{initialData.study.levelMastered} of 20 progressing{canChangeLevel ? " · admin controls" : ""}</span>
               <button type="button" onClick={() => setQuizMode(true)} className="mt-3 rounded-full border border-[#1d4d58]/20 bg-white/60 px-4 py-2 text-xs font-semibold text-[#1d4d58] transition hover:bg-[#d9eeec]">Quiz this level</button>
             </div>
           </div>

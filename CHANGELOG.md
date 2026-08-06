@@ -204,3 +204,48 @@ All notable changes and repository commits are documented here. This project fol
 
 - Keeps long English notes inside the fixed card height with an internal scroll area.
 - Prevents rating controls from being overlapped by card content.
+
+### `feat: add Clerk authentication and user approval`
+
+- Protects the application with Clerk and adds sign-in/sign-up routes.
+- Requires approval for non-admin users and restricts admin routes to configured administrators.
+- Stores study state and phrase progress per Clerk user.
+
+### `feat: add user rights administration`
+
+- Adds `/admin/users` with approval controls and visible Admin/Member rights.
+- Prevents an administrator from revoking their own access.
+- Adds Clerk `UserButton` menus to study and admin pages.
+
+### `feat: provision Turso and Vercel Blob integrations`
+
+- Adds documented Turso and Blob environment variables.
+- Stores uploaded/generated audio in Vercel Blob when configured, with local audio fallback.
+
+### `deploy: publish production build`
+
+- Deployed the validated production build to https://flashcard-ten-livid.vercel.app.
+
+### `fix: avoid read-only SQLite writes on Vercel`
+
+- Uses `/tmp/phrases.db` in Vercel runtimes when no database path is configured.
+- Prevents deployment initialization from failing against the read-only application bundle.
+- Turso remains provisioned for the upcoming async runtime adapter migration.
+
+### `data: migrate local records and audio references`
+
+- Migrated 1,380 phrases and 7 archive flags into Turso.
+- Migrated all 1,380 audio recordings to Vercel Blob and updated local references.
+- Removed the tracked `data/phrases.json` seed file; local seeding is now optional.
+- Runtime Turso adapter migration remains required before deploying this removal to production.
+
+### `feat: use Turso for runtime persistence`
+
+- Adds the asynchronous `@tursodatabase/serverless` database adapter.
+- Routes production reads and writes for phrases, archive flags, statuses, translations, audio URLs, and per-user study progress through Turso.
+- Keeps synchronous SQLite only as a local fallback when Turso credentials are absent.
+- Deploys the completed runtime migration to production.
+
+### `fix: keep account menu visible while pending`
+
+- Shows the Clerk account menu on the approval-pending screen so users can sign out or switch accounts.

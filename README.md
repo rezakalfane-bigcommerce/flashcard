@@ -90,13 +90,12 @@ src/
 └── lib/
     └── db.ts            # SQLite schema, seed data, and queries
 data/
-├── phrases.json         # Tracked seed collection
 └── phrases.db           # Created automatically; ignored by Git
 ```
 
 ## SQLite data
 
-The database is created at `data/phrases.db` on the first request. Its WAL companion files and the database itself are excluded from Git. On an empty database, the app loads the complete tracked collection from `data/phrases.json`, so fresh clones receive every source collection.
+The database is created at `data/phrases.db` on the first request for local fallback development. Its WAL companion files and the database itself are excluded from Git. The canonical collection is now stored in Turso; local fallback instances require a restored database backup or an import.
 
 Set `SQLITE_PATH` to use another database location, which is useful for isolated tests or hosts with a persistent volume.
 
@@ -159,11 +158,21 @@ Open [http://localhost:3000/admin](http://localhost:3000/admin) or select **Admi
 
 Translation statuses are `missing`, `partly_missing`, `draft`, `translated`, and `reviewed`. `partly_missing` means exactly one or two of meaning, literal translation, and context are blank. Editorial statuses are `unreviewed`, `needs_review`, `approved`, and `rejected`. AI output is always saved as `draft` + `needs_review`; it is never automatically approved.
 
-Audio recordings are stored locally in `public/audio/` and referenced by URL in SQLite. Uploads are limited to common browser audio formats and 15 MB. The folder is ignored by Git, so production deployments should use persistent object storage if recordings need to survive redeployments.
+Audio recordings are stored locally in `public/audio/` during local-only development and referenced by URL in SQLite. When `BLOB_READ_WRITE_TOKEN` is available, uploads and generated audio are stored in the linked public Vercel Blob store. Uploads are limited to common browser audio formats and 15 MB.
 
-In the expression editor, **Generate with Google TTS** sends the Icelandic expression to Google Cloud Text-to-Speech and saves the returned MP3 locally. Set `GOOGLE_TTS_API_KEY` in `.env.local` first; generation is always confirmed before an existing recording is replaced.
+In the expression editor, **Generate with Google TTS** sends the Icelandic expression to Google Cloud Text-to-Speech and saves the returned MP3. With `BLOB_READ_WRITE_TOKEN`, the file is stored in Vercel Blob; without it, local development falls back to `public/audio/`. Set `GOOGLE_TTS_API_KEY` in `.env.local` first; generation is always confirmed before an existing recording is replaced.
 
-The admin currently assumes a trusted, local operator and is not authenticated. Add access control before exposing it on a public deployment.
+### Authentication and access control
+
+The whole application requires a signed-in Clerk user. New users see a pending-approval screen until an administrator approves their account in `/admin/users`. Admin pages (`/admin`, `/admin/statistics`, `/admin/archive`, and `/admin/users`) additionally require the user’s primary email to appear in `ADMIN_EMAILS`. The initial development admin is `reza.kalfane@gmail.com`.
+
+The Vercel Marketplace Clerk integration provisions `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`. Sign-in and sign-up are available at `/sign-in` and `/sign-up`.
+
+### Development environment
+
+Copy `.env.example` to `.env.local` and fill in the secrets. Vercel’s development integrations populate Clerk, Turso, and Blob values automatically when you run `vercel env pull --environment=development`. Add `ADMIN_EMAILS` with the comma-separated primary email(s) that may administer the app. `.env.local` is ignored by Git and must never be committed; it is the machine-local secret file, while `.env.example` documents the complete schema with safe empty values.
+
+The development Vercel project has a Turso Cloud SQLite resource exposed through `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`, and a public Blob store exposed through `BLOB_READ_WRITE_TOKEN`. Audio uses Blob when configured. The current synchronous SQLite adapter uses the local file during development and `/tmp/phrases.db` on Vercel to avoid the platform's read-only bundle; the Turso runtime adapter migration is still pending.
 
 ### AI translation setup
 

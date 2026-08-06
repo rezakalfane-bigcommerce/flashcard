@@ -18,7 +18,7 @@ const colors: Record<string, string> = {
 
 export default async function StatisticsPage() {
   await connection();
-  const stats = getAdminStatistics();
+  const stats = await getAdminStatistics();
   const translatedPercent = percent(stats.translated, stats.total);
   const approvedPercent = percent(stats.approved, stats.total);
 
