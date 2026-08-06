@@ -617,3 +617,91 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Passed lint, TypeScript, production build, and diff checks.
 - Confirmed `/admin/archive` is included in the production route set.
 - Created and integrity-checked `data/backup/phrases-20260805T231208Z.db` with 1,380 phrases and both `audio_url` and `archived_at` schema columns.
+
+## 2026-08-06 — Authentication, users, environment documentation, and deployment
+
+### Prompts
+
+> Can you deploy to Vercel and add Clerk authentication, mark my account reza.kalfane@gmail.com as admin to protect the admin pages?
+
+> Can you also setup Turso, as well as Blob for audio files?
+
+> The whole application should be protected by Clerk. New users need to be validated by admin in a users section.
+
+> In Users, we should be able to see users rights like admin, etc.
+
+> Can't revoke yourself.
+
+> Where is the account icon/menu?
+
+> Can you update .env.example and document it as well as document .env.local?
+
+> Can you deploy to Vercel in production so we can test the app?
+
+### Summary
+
+- Added Clerk protection, sign-in/sign-up routes, pending-user approval, per-user progression, and admin-only database controls.
+- Added a Users admin page showing Admin/Member rights and preventing administrators from revoking their own access.
+- Added Clerk account menus to the study and admin interfaces.
+- Provisioned development Clerk, Turso Cloud, and Vercel Blob resources; Blob is used for audio when `BLOB_READ_WRITE_TOKEN` is present.
+- Documented every supported environment variable in `.env.example` and the secret-file workflow in `README.md`.
+- Added `axelle.detaille@gmail.com` to the local `ADMIN_EMAILS` allowlist.
+- Production deployment is live at https://flashcard-ten-livid.vercel.app.
+
+## 2026-08-06 — Vercel read-only SQLite fix
+
+### Prompt
+
+> SqliteError: attempt to write a readonly database
+
+### Summary
+
+- Vercel deployments now use `/tmp/phrases.db` when no explicit `SQLITE_PATH` is supplied, avoiding writes to the read-only deployment bundle.
+- Verified lint, TypeScript, and production build.
+- Redeployed successfully to https://flashcard-ten-livid.vercel.app.
+- Documented that the synchronous Turso runtime migration is still pending; Turso credentials are provisioned but not yet used by `src/lib/db.ts`.
+
+## 2026-08-06 — Account menu on pending screen
+
+### Prompt
+
+> Keep displaying the account item/menu on the page to sign out if needed.
+
+### Summary
+
+- Added the Clerk account menu to the pending-approval screen.
+- Redeployed production successfully.
+
+## 2026-08-06 — Turso data port and seed removal
+
+### Prompts
+
+> Also can you port the Archive flags from local to Turso?
+
+> I think we need to migrate the whole local DB to Turso
+
+> Can we then remove phrases.json from repository?
+
+### Summary
+
+- Uploaded all 1,380 local audio files to Vercel Blob and updated local SQLite URLs.
+- Copied all 1,380 phrase records to Turso, including 7 archived records and the study/progress tables.
+- Removed `data/phrases.json` from the repository after making local seeding optional.
+- Added a clear restore-script error when the removed seed file is requested.
+- The Turso data migration is complete; the application runtime adapter still needs to be switched from synchronous SQLite to Turso for persistent production writes.
+
+## 2026-08-06 — Turso runtime migration
+
+### Prompt
+
+> Ok continue that, then
+
+> Will it push all local DB values to Turso (all translations, link to audio files, all statuses, etc.)?
+
+### Summary
+
+- Replaced the synchronous production database path with the asynchronous Turso serverless adapter.
+- Updated all dashboard, admin, archive, statistics, review, translation, audio, and progression operations to await Turso queries.
+- Local SQLite remains available when Turso variables are absent.
+- Verified lint, TypeScript, and production build.
+- Deployed the persistent Turso runtime to https://flashcard-ten-livid.vercel.app.

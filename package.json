@@ -12,6 +12,9 @@
     "phrases:backup": "node scripts/backup-database.mjs"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.6.5",
+    "@tursodatabase/serverless": "^1.4.0",
+    "@vercel/blob": "^2.6.1",
     "ai": "^6.0.242",
     "better-sqlite3": "^12.11.1",
     "next": "16.3.0",

@@ -6,7 +6,7 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<str
 
 export default async function ExpressionPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const phrase = getExpression(Number(id));
+  const phrase = await getExpression(Number(id));
   if (!phrase) notFound();
   const raw = await searchParams;
   const notice = Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]));

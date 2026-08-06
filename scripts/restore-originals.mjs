@@ -4,7 +4,13 @@ import path from "node:path";
 
 const root = process.cwd();
 const databasePath = process.env.SQLITE_PATH ? path.resolve(process.env.SQLITE_PATH) : path.join(root, "data", "phrases.db");
-const rows = JSON.parse(fs.readFileSync(path.join(root, "data", "phrases.json"), "utf8"));
+const seedPath = path.join(root, "data", "phrases.json");
+try {
+  await fs.access(seedPath);
+} catch {
+  throw new Error("data/phrases.json has been removed; restore originals from the Turso backup or re-import the source data first.");
+}
+const rows = JSON.parse(fs.readFileSync(seedPath, "utf8"));
 const names = ["Að lágmarka", "Að lúffa", "Að undirbúa", "Að uppræta", "Að þroskast", "Ættarmót", "Ofviðri", "Öllu lokið", "Örlögin ráða", "Undan bragði", "Undan vindi", "Undir rós", "Í dentíð", "Í kyrrþey", "Í laumi", "Í sífellu", "Með köflum", "Núliðin tíð", "Tíminn líður", "Að sjóast"];
 const originals = rows.filter((row) => names.includes(row.icelandic));
 if (originals.length !== names.length) throw new Error(`Expected ${names.length} source records, found ${originals.length}`);

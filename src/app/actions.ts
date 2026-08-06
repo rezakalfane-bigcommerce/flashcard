@@ -1,14 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createPhrase, reviewPhrase, setStudyLevel } from "@/lib/db";
+import { createPhrase, getDashboardData, reviewPhrase, setStudyLevel } from "@/lib/db";
+import { requireAdmin, requireApprovedUser } from "@/lib/auth";
 
 export async function addPhrase(formData: FormData) {
+  await requireAdmin();
   const icelandic = String(formData.get("icelandic") ?? "").trim();
   const meaning = String(formData.get("meaning") ?? "").trim();
   if (!icelandic || !meaning) return;
 
-  createPhrase({
+  await createPhrase({
     icelandic,
     meaning,
     literal: String(formData.get("literal") ?? "").trim(),
@@ -20,11 +22,17 @@ export async function addPhrase(formData: FormData) {
 }
 
 export async function saveReview(id: number, remembered: boolean) {
-  reviewPhrase(id, remembered);
+  const access = await requireApprovedUser();
+  if (!access.approved) throw new Error("Account pending approval");
+  await reviewPhrase(access.userId, id, remembered);
   revalidatePath("/");
 }
 
 export async function changeLevel(level: number) {
-  setStudyLevel(level);
+  const access = await requireApprovedUser();
+  if (!access.approved) throw new Error("Account pending approval");
+  const currentLevel = (await getDashboardData(access.userId)).study.currentLevel;
+  if (!access.isAdmin && level > currentLevel + 1) throw new Error("Complete the current level first");
+  await setStudyLevel(access.userId, level);
   revalidatePath("/");
 }
