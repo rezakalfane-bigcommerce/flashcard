@@ -161,6 +161,8 @@ Translation statuses are `missing`, `partly_missing`, `draft`, `translated`, and
 
 Audio recordings are stored locally in `public/audio/` and referenced by URL in SQLite. Uploads are limited to common browser audio formats and 15 MB. The folder is ignored by Git, so production deployments should use persistent object storage if recordings need to survive redeployments.
 
+In the expression editor, **Generate with Google TTS** sends the Icelandic expression to Google Cloud Text-to-Speech and saves the returned MP3 locally. Set `GOOGLE_TTS_API_KEY` in `.env.local` first; generation is always confirmed before an existing recording is replaced.
+
 The admin currently assumes a trusted, local operator and is not authenticated. Add access control before exposing it on a public deployment.
 
 ### AI translation setup

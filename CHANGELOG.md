@@ -172,3 +172,35 @@ All notable changes and repository commits are documented here. This project fol
 
 - Validated lint, TypeScript, production build, and archive route generation.
 - Created an integrity-checked SQLite backup under `data/backup/`.
+
+### `feat: generate Icelandic audio with Google Cloud TTS`
+
+- Adds a confirmation modal and editor button for generating Icelandic MP3 audio.
+- Sends only the expression text to Google Cloud Text-to-Speech using `GOOGLE_TTS_API_KEY`.
+- Saves generated audio locally, updates SQLite, and removes a replaced local recording.
+
+### `feat: add batch Google TTS generation`
+
+- Adds a confirmation modal and progress percentage for selected expressions.
+- Generates audio in small concurrent groups, reports failures, and refreshes the list when complete.
+
+### `fix: filter expressions without audio`
+
+- Adds `Without audio` to the translation filter dropdown.
+- Improves contrast for the batch Generate audio action.
+
+### `feat: add slow flashcard audio playback`
+
+- Adds a 0.5× playback option next to the flashcard Listen button.
+- Keeps normal speed as the default and applies the selected rate on playback.
+- Labels the controls Normal and Slow, with Slow using a 0.7× playback rate.
+
+### `feat: add audio controls to quiz cards`
+
+- Adds Listen/ Pause and Normal/Slow controls to quiz questions with audio.
+- Keeps the quiz card layout fixed while positioning controls inside the card.
+
+### `fix: prevent flashcard content overflow`
+
+- Keeps long English notes inside the fixed card height with an internal scroll area.
+- Prevents rating controls from being overlapped by card content.

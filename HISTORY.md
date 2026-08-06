@@ -529,6 +529,81 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 - Kept Edit and Archive/Un-archive controls on one horizontal action row.
 
+## 2026-08-05 — Google Cloud Text-to-Speech generation
+
+### Prompt
+
+> I have an GOOGLE_TTS_API_KEY to use Cloud Text-to-Speech API. Can you add a button in Edit form to generate the audio through the API and save it to the expression. Add a confirmation modal
+
+### Summary
+
+- Added a server-side Google Cloud Text-to-Speech action using the `is-IS` voice and MP3 output.
+- Added a confirmation modal in the expression editor, with replacement warning, pending state, and API error display.
+- Generated audio is saved under `public/audio/`, linked in SQLite, and the previous local recording is removed after successful replacement.
+- Documented `GOOGLE_TTS_API_KEY` usage in the README.
+
+### Follow-up
+
+> Add the generate audio action to the batch actions when selecting multiple lines
+
+### Summary
+
+- Added batch Google TTS generation for selected expressions, capped by the existing 50-row selection limit.
+- Added confirmation before replacing existing recordings, progress percentage, failure count, and completion feedback.
+
+## 2026-08-05 — Audio filter and batch action contrast
+
+### Prompt
+
+> Add "Without audio" in the Any translation dropdown to list expressions without audio. Can't see the button very well.
+
+### Summary
+
+- Added a `Without audio` option to the translation filter, matching empty audio URLs in SQLite.
+- Improved the batch Generate audio button contrast on the dark selection toolbar.
+
+## 2026-08-05 — Slow flashcard audio
+
+### Prompt
+
+> Add a 0.5x option on the flashcard to play audio at slow speed
+
+### Summary
+
+- Added a flashcard audio speed toggle between normal playback and 0.5× speed.
+- The selected speed is applied whenever pronunciation playback starts.
+
+### Follow-up
+
+> Show "Normal" instead of 1x, "Slow" instead of 0.5x. Use 0.7x for slow speed.
+
+### Summary
+
+- Renamed the controls to Normal and Slow.
+- Updated slow playback to 0.7×.
+
+## 2026-08-06 — Quiz audio controls
+
+### Prompt
+
+> Also add the play and speed buttons in the quizz cards
+
+### Summary
+
+- Added pronunciation playback to quiz question cards when audio is available.
+- Added the same Normal/Slow toggle, with Slow using 0.7× playback.
+
+## 2026-08-06 — Flashcard back layout fix
+
+### Prompt
+
+> Layout issue: long English notes overflow the fixed flashcard and overlap the rating buttons.
+
+### Summary
+
+- Constrained the flashcard back to its fixed height.
+- Added an internal scroll area for long meaning, literal, and context content.
+
 ## 2026-08-05 — Archive validation and backup
 
 ### Prompts
