@@ -87,7 +87,6 @@ export function FlashcardApp({ initialData, canChangeLevel = false }: { initialD
           <div className="mb-6 flex items-end justify-between">
             <div>
               <p className="mono mb-2 text-[10px] uppercase tracking-[.24em] text-[#78979c]">Today’s practice</p>
-              <h1 className="display text-4xl leading-none sm:text-5xl">Say it out loud.</h1>
             </div>
             <div className="text-right">
               {canChangeLevel && <div className="flex items-center justify-end gap-2">
