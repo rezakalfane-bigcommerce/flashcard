@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { addPhrase, changeLevel, saveReview } from "@/app/actions";
+import { changeLevel, saveReview } from "@/app/actions";
 import type { DashboardData } from "@/lib/db";
 import { QuizMode } from "@/components/quiz-mode";
 import { useRouter } from "next/navigation";
@@ -31,7 +31,6 @@ export function FlashcardApp({ initialData, canChangeLevel = false }: { initialD
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const [adding, setAdding] = useState(false);
   const [quizMode, setQuizMode] = useState(false);
   const [savingChoice, setSavingChoice] = useState<boolean | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -39,14 +38,14 @@ export function FlashcardApp({ initialData, canChangeLevel = false }: { initialD
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.code === "Space" && !adding && !quizMode) {
+      if (event.code === "Space" && !quizMode) {
         event.preventDefault();
         setFlipped((value) => !value);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [adding, quizMode]);
+  }, [quizMode]);
 
   function rate(remembered: boolean) {
     if (!phrase || savingChoice !== null) return;
@@ -80,11 +79,11 @@ export function FlashcardApp({ initialData, canChangeLevel = false }: { initialD
           <span className="display text-3xl font-semibold tracking-tight text-[#1d4d58]">Orðspor</span>
           <span className="mono hidden text-[10px] uppercase tracking-[.22em] text-[#78979c] sm:inline">Icelandic, remembered</span>
         </div>
-        <div className="flex items-center gap-2">{canChangeLevel && <><Link href="/admin" className="rounded-full px-4 py-2.5 text-sm font-semibold text-[#1d4d58] hover:bg-[#d9eeec]">Admin</Link><button onClick={() => setAdding(true)} className="rounded-full bg-[#15292d] px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#1d4d58] focus:outline-none focus:ring-2 focus:ring-[#b7d86a] focus:ring-offset-2">+ Add phrase</button></>}<UserButton /></div>
+        <div className="flex items-center gap-2">{canChangeLevel && <Link href="/admin" className="rounded-full px-4 py-2.5 text-sm font-semibold text-[#1d4d58] hover:bg-[#d9eeec]">Admin</Link>}<UserButton /></div>
       </header>
 
       <section className={`mx-auto grid max-w-6xl gap-10 py-10 ${quizMode ? "grid-cols-1 lg:py-16" : "lg:grid-cols-[1fr_300px] lg:py-16"}`}>
-        {quizMode ? <QuizMode phrases={initialData.phrases} level={initialData.study.currentLevel} totalLevels={initialData.study.totalLevels} onExit={() => setQuizMode(false)} onPass={() => goToLevel(initialData.study.currentLevel + 1)} /> : <div>
+        {quizMode ? <QuizMode phrases={initialData.phrases} level={initialData.study.currentLevel} totalLevels={initialData.study.totalLevels} isChangingLevel={isPending} onExit={() => setQuizMode(false)} onPass={() => goToLevel(initialData.study.currentLevel + 1)} /> : <div>
           <div className="mb-6 flex items-end justify-between">
             <div>
               <p className="mono mb-2 text-[10px] uppercase tracking-[.24em] text-[#78979c]">Today’s practice</p>
@@ -96,7 +95,7 @@ export function FlashcardApp({ initialData, canChangeLevel = false }: { initialD
                 <span className="mono text-xs font-semibold text-[#1d4d58]">Level {String(initialData.study.currentLevel).padStart(2, "0")} / {String(initialData.study.totalLevels).padStart(2, "0")}</span>
                 <button type="button" aria-label="Next level" title="Next level (admin testing)" onClick={() => goToLevel(initialData.study.currentLevel + 1)} disabled={isPending || initialData.study.currentLevel === initialData.study.totalLevels} className="grid h-8 w-8 place-items-center rounded-full border border-[#1d4d58]/20 text-[#1d4d58] transition hover:bg-[#d9eeec] disabled:cursor-not-allowed disabled:opacity-30">→</button>
               </div>}
-              <span className="mt-1 block text-xs text-[#78979c]">{initialData.study.levelMastered} of 20 progressing{canChangeLevel ? " · admin controls" : ""}</span>
+              <span className="mt-1 block text-xs text-[#78979c]">{initialData.study.levelMastered} of {initialData.study.levelTotal} progressing{canChangeLevel ? " · admin controls" : ""}</span>
               <button type="button" onClick={() => setQuizMode(true)} className="mt-3 rounded-full border border-[#1d4d58]/20 bg-white/60 px-4 py-2 text-xs font-semibold text-[#1d4d58] transition hover:bg-[#d9eeec]">Quiz this level</button>
             </div>
           </div>
@@ -134,7 +133,7 @@ export function FlashcardApp({ initialData, canChangeLevel = false }: { initialD
                   <p className="mt-5 shrink-0 text-xs text-[#1d4d58]/60">Tap to see the phrase again</p>
                 </article>
               </button>
-              {phrase.audioUrl && <AudioPlayButton audioUrl={phrase.audioUrl} />}
+              {phrase.audioUrl && <AudioPlayButton audioUrl={phrase.audioUrl} resetKey={phrase.id} />}
             </div>
           )}
 
@@ -161,15 +160,21 @@ export function FlashcardApp({ initialData, canChangeLevel = false }: { initialD
         </aside>}
       </section>
 
-      {adding && <AddPhraseModal close={() => setAdding(false)} />}
     </main>
   );
 }
 
-function AudioPlayButton({ audioUrl }: { audioUrl: string }) {
+function AudioPlayButton({ audioUrl, resetKey }: { audioUrl: string; resetKey: number }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    setPlaying(false);
+  }, [resetKey, audioUrl]);
   function toggle(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     const audio = audioRef.current;
@@ -195,31 +200,4 @@ function Stat({ value, label }: { value: number; label: string }) {
 
 function Spinner() {
   return <span aria-hidden="true" className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />;
-}
-
-function AddPhraseModal({ close }: { close: () => void }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[#15292d]/65 p-5 backdrop-blur-sm" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div role="dialog" aria-modal="true" aria-labelledby="add-title" className="w-full max-w-lg rounded-[2rem] bg-[#f4f8f7] p-7 shadow-2xl sm:p-9">
-        <div className="flex items-start justify-between">
-          <div><p className="mono text-[10px] uppercase tracking-[.2em] text-[#78979c]">New card</p><h2 id="add-title" className="display mt-1 text-4xl">Add a phrase</h2></div>
-          <button onClick={close} aria-label="Close" className="rounded-full p-2 text-xl hover:bg-[#d9eeec]">×</button>
-        </div>
-        <form className="mt-7 space-y-4" action={(formData) => startTransition(async () => { await addPhrase(formData); router.refresh(); close(); })}>
-          <Field label="Icelandic" name="icelandic" placeholder="Sjáumst á morgun" required />
-          <Field label="English meaning" name="meaning" placeholder="See you tomorrow" required />
-          <Field label="Literal translation" name="literal" placeholder="We see each other tomorrow" />
-          <label className="block text-sm font-semibold">Why / context<textarea name="why" placeholder="Etymology, imagery, or cultural context…" rows={3} className="mt-2 w-full resize-none rounded-xl border border-[#1d4d58]/20 bg-white px-4 py-3 font-normal outline-none placeholder:text-[#78979c]/60 focus:border-[#1d4d58] focus:ring-2 focus:ring-[#b7d86a]" /></label>
-          <div className="grid gap-4 sm:grid-cols-2"><Field label="Category" name="category" placeholder="Expressions" /><Field label="Source" name="source" placeholder="Personal" /></div>
-          <button disabled={pending} className="mt-2 w-full rounded-2xl bg-[#1d4d58] py-4 font-semibold text-white hover:bg-[#15292d] disabled:opacity-60">{pending ? "Saving…" : "Save phrase"}</button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, name, placeholder, required = false }: { label: string; name: string; placeholder: string; required?: boolean }) {
-  return <label className="block text-sm font-semibold">{label}<input autoFocus={name === "icelandic"} required={required} name={name} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-[#1d4d58]/20 bg-white px-4 py-3 font-normal outline-none placeholder:text-[#78979c]/60 focus:border-[#1d4d58] focus:ring-2 focus:ring-[#b7d86a]" /></label>;
 }

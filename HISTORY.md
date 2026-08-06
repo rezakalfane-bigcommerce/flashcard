@@ -749,3 +749,66 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 - Review actions now advance to the next card immediately while the Turso write continues asynchronously.
 - Buttons remain disabled with a syncing spinner until persistence finishes.
+
+## 2026-08-06 — Modal Escape handling and adaptive quiz levels
+
+### Prompts
+
+> All modals should close on ESC key
+
+> In quiz mode, add the literal translation as subtitle for each possible answer
+
+> with items archived, all levels don't have 20 expressions, adapt the progressing and number of quiz questions
+
+### Summary
+
+- Added shared Escape-key handling to add-phrase, translation, batch, archive, and audio-generation modals.
+- Added literal translations as subtitles beneath every quiz answer.
+- Quiz questions use the number of active expressions available in the current level (up to 20).
+- Progress displays the active phrase count for the current level instead of assuming 20.
+
+## 2026-08-06 — Quiz transition and audio playback reset
+
+### Prompts
+
+> Clicking on Continue to next level takes time, and should use some spinner like for the other actions we did
+
+> clicking on remember ... the audio button should go back to play if the card was flipped in the middle of the audio
+
+### Summary
+
+- Added a loading spinner and disabled state to the quiz’s Continue to next level action while the level transition is pending.
+- Audio pauses and rewinds when a reviewed card changes or a quiz question advances.
+
+## 2026-08-06 — Preserve audio while flipping cards
+
+### Prompt
+
+> Flipping from Icelandic to English notes and back should not stop the audio. It's only when clicking on I remembered or Still learning and flipping that it should reset to play
+
+### Summary
+
+- Audio now continues while the card is flipped between Icelandic and English notes.
+- Playback resets only when the reviewed expression changes, or when a quiz question changes.
+
+## 2026-08-06 — Keep expression creation in Admin
+
+### Prompt
+
+> Just keep the "New expression" button
+
+### Summary
+
+- Removed the dashboard’s duplicate “+ Add phrase” shortcut and modal.
+- Kept the Admin page’s “+ New expression” button as the single expression-creation entry point.
+
+## 2026-08-06 — Fix edit form console error
+
+### Prompt
+
+> Cannot specify an encType or method for a form that specifies a function as the action ... got that when editing an entry
+
+### Summary
+
+- Removed the explicit `encType` from the Server Action-backed expression form.
+- React now supplies the appropriate form encoding automatically, eliminating the Next.js console error while preserving file uploads.
