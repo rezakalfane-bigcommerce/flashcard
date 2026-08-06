@@ -705,3 +705,47 @@ The prompt supplied 159 expressions with English meanings and context notes.
 - Local SQLite remains available when Turso variables are absent.
 - Verified lint, TypeScript, and production build.
 - Deployed the persistent Turso runtime to https://flashcard-ten-livid.vercel.app.
+
+## 2026-08-06 — Review action feedback
+
+### Prompt
+
+> When we click on a button like Still learning or I remembered, it takes time and there is no spinner or anything... can we improve that/
+
+### Summary
+
+- Added immediate spinner and “Saving…” feedback to review buttons.
+- Disabled both rating buttons during persistence and prevented duplicate submissions.
+- Failed saves restore the controls so the user can retry.
+
+## 2026-08-06 — Notebook seen count
+
+### Prompt
+
+> In my notebook it's showing "1373 phrases", but it should better show the number of phrases seen accross the validated levels?
+
+### Summary
+
+- Replaced the notebook’s all-deck total with a per-user count of phrases reviewed at least once.
+- Labeled the metric “phrases seen” so it reflects actual learning progress.
+
+## 2026-08-06 — Review spinner completion fix
+
+### Prompt
+
+> When save is done, spinner is still there
+
+### Summary
+
+- Clears the review button’s pending state after a successful save before refreshing the dashboard.
+
+## 2026-08-06 — Optimistic review navigation
+
+### Prompt
+
+> can it be faster / async?
+
+### Summary
+
+- Review actions now advance to the next card immediately while the Turso write continues asynchronously.
+- Buttons remain disabled with a syncing spinner until persistence finishes.

@@ -246,6 +246,25 @@ All notable changes and repository commits are documented here. This project fol
 - Keeps synchronous SQLite only as a local fallback when Turso credentials are absent.
 - Deploys the completed runtime migration to production.
 
+### `fix: show review save progress`
+
+- Adds a spinner and “Saving…” state to Still learning/I remembered.
+- Prevents duplicate review submissions while Turso persistence is in flight.
+
+### `fix: show phrases seen in notebook`
+
+- Counts user-reviewed expressions instead of displaying the entire deck size.
+- Labels the metric “phrases seen”.
+
+### `fix: clear review spinner after save`
+
+- Resets the review action state after successful persistence so the spinner cannot remain stuck.
+
+### `perf: make review navigation optimistic`
+
+- Shows the next card immediately while saving the previous rating in the background.
+- Keeps review controls protected from duplicate submissions during the async write.
+
 ### `fix: keep account menu visible while pending`
 
 - Shows the Clerk account menu on the approval-pending screen so users can sign out or switch accounts.
