@@ -812,3 +812,42 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 - Removed the explicit `encType` from the Server Action-backed expression form.
 - React now supplies the appropriate form encoding automatically, eliminating the Next.js console error while preserving file uploads.
+
+## 2026-08-06 — Edit navigation and live complexity
+
+### Prompts
+
+> When editing an entry, there should be left/right buttons on the right of "Archive" to go to the next/previous expression in the modal. warn in case there are unsaved changes
+
+> live update complexity when updating form
+
+### Summary
+
+- Added previous/next expression buttons beside Archive, following the current admin/archive result set.
+- Added unsaved-change confirmation for expression navigation and browser unloads.
+- Complexity now recalculates live as the Icelandic expression is edited.
+
+## 2026-08-06 — Edit navigation feedback and unsaved-change modal
+
+### Prompts
+
+> There should be some spinner as it takes time to navigate
+
+> Use a nice modal window when showing warning for unsaved info
+
+### Summary
+
+- Added direction-specific spinners and disabled states to previous/next navigation.
+- Replaced the browser confirmation prompt with a styled modal offering Stay and Leave without saving.
+- The unsaved-changes modal also closes with Escape or backdrop click.
+
+## 2026-08-06 — Lock edit controls during navigation
+
+### Prompt
+
+> when navigating, Save changes should be disabled ... and archive too... and editing the form too
+
+### Summary
+
+- Disables Save changes, Archive, and all form fields while a previous/next expression is loading.
+- Keeps the active navigation spinner visible until the route transition completes.

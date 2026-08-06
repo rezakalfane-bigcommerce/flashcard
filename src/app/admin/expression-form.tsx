@@ -1,26 +1,63 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Phrase } from "@/lib/db";
+import { calculateComplexity } from "@/lib/complexity";
 import { createExpressionAction, saveExpressionAction } from "./actions";
 import { TranslationModal } from "./translation-modal";
 import type { TranslationField } from "@/lib/translation";
 import { ArchiveControl } from "./archive-control";
 import { AudioGenerationControl } from "./audio-generation-control";
+import { useEscapeKey } from "@/components/use-escape-key";
 
 type Notice = { saved?: string; created?: string; generated?: string; error?: string };
+type Navigation = { returnTo?: string; previousId?: number; nextId?: number };
+type LeaveRequest = { href: string; direction?: "previous" | "next" };
 
-export function ExpressionForm({ phrase, notice = {} }: { phrase?: Phrase; notice?: Notice }) {
+export function ExpressionForm({ phrase, notice = {}, navigation = {} }: { phrase?: Phrase; notice?: Notice; navigation?: Navigation }) {
   const isNew = !phrase;
+  const router = useRouter();
+  const [dirty, setDirty] = useState(false);
+  const [navigationPending, setNavigationPending] = useState<"previous" | "next" | null>(null);
+  const [leaveRequest, setLeaveRequest] = useState<LeaveRequest | null>(null);
+  useEscapeKey(() => setLeaveRequest(null), leaveRequest !== null);
+  const [complexity, setComplexity] = useState(phrase?.complexity ?? calculateComplexity(phrase?.icelandic ?? ""));
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  function navigate(id?: number) {
+    if (!id) return;
+    const query = navigation.returnTo ? `?${new URLSearchParams({ returnTo: navigation.returnTo }).toString()}` : "";
+    const href = `/admin/${id}${query}`;
+    const direction = id === navigation.previousId ? "previous" : "next";
+    if (dirty) setLeaveRequest({ href, direction });
+    else startNavigation(href, direction);
+  }
+
+  function startNavigation(href: string, direction?: "previous" | "next") {
+    setNavigationPending(direction ?? null);
+    setDirty(false);
+    router.push(href);
+  }
   return (
     <main className="min-h-screen bg-[#edf4f2] px-4 py-6 text-[#15292d] md:px-8">
-      <header className="mx-auto flex max-w-6xl items-end justify-between gap-5 border-b border-[#1d4d58]/20 pb-6"><div><Link href={phrase?.archivedAt ? "/admin/archive" : "/admin"} className="mono text-xs text-[#78979c] hover:text-[#1d4d58]">← {phrase?.archivedAt ? "Archived expressions" : "All expressions"}</Link><p className="mono mt-5 text-[10px] uppercase tracking-[.22em] text-[#78979c]">{isNew ? "New database record" : `Expression ${phrase.id}`}</p><h1 className="display mt-1 max-w-4xl text-4xl sm:text-5xl">{isNew ? "Add an expression" : phrase.icelandic}</h1></div>{phrase && <div className="flex flex-wrap items-end justify-end gap-4 text-right"><div><p className="mono text-xs">Level {phrase.level} · Complexity {phrase.complexity}</p><p className="mt-1 text-xs text-[#78979c]">Updated {new Date(phrase.updatedAt).toLocaleDateString()}</p></div><ArchiveControl id={phrase.id} phrase={phrase.icelandic} archived={Boolean(phrase.archivedAt)} /></div>}</header>
+      <header className="mx-auto flex max-w-6xl items-end justify-between gap-5 border-b border-[#1d4d58]/20 pb-6"><div><Link href={phrase?.archivedAt ? "/admin/archive" : "/admin"} onClick={(event) => { if (dirty) { event.preventDefault(); setLeaveRequest({ href: phrase?.archivedAt ? "/admin/archive" : "/admin" }); } }} className="mono text-xs text-[#78979c] hover:text-[#1d4d58]">← {phrase?.archivedAt ? "Archived expressions" : "All expressions"}</Link><p className="mono mt-5 text-[10px] uppercase tracking-[.22em] text-[#78979c]">{isNew ? "New database record" : `Expression ${phrase.id}`}</p><h1 className="display mt-1 max-w-4xl text-4xl sm:text-5xl">{isNew ? "Add an expression" : phrase.icelandic}</h1></div>{phrase && <div className="flex flex-wrap items-end justify-end gap-4 text-right"><div><p className="mono text-xs">Level {phrase.level} · Complexity {complexity}</p><p className="mt-1 text-xs text-[#78979c]">Updated {new Date(phrase.updatedAt).toLocaleDateString()}</p></div><div className="flex items-center gap-2"><ExpressionNavigation previousId={navigation.previousId} nextId={navigation.nextId} pending={navigationPending} onNavigate={navigate} /><ArchiveControl id={phrase.id} phrase={phrase.icelandic} archived={Boolean(phrase.archivedAt)} disabled={navigationPending !== null} /></div></div>}</header>
       <div className="mx-auto grid max-w-6xl gap-6 py-7 lg:grid-cols-[1fr_310px]">
         <section className="rounded-3xl border border-[#1d4d58]/15 bg-white p-6 shadow-sm sm:p-8">
           {(notice.saved || notice.created || notice.generated) && <p className="mb-6 rounded-xl bg-[#b7d86a]/25 px-4 py-3 text-sm font-semibold">{notice.generated ? `Draft generated with ${notice.generated}. Review before approving.` : "Expression saved."}</p>}
           {notice.error && <p className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">{notice.error}</p>}
-          <form action={isNew ? createExpressionAction : saveExpressionAction} className="space-y-5">
+          <form action={isNew ? createExpressionAction : saveExpressionAction} onChange={() => setDirty(true)} className="space-y-5">
+            <fieldset disabled={navigationPending !== null}>
             {phrase && <input type="hidden" name="id" value={phrase.id} />}
             {phrase && <input type="hidden" name="audioUrl" value={phrase.audioUrl} />}
-            <Field label="Icelandic expression" name="icelandic" defaultValue={phrase?.icelandic} required />
+            <Field label="Icelandic expression" name="icelandic" defaultValue={phrase?.icelandic} onChange={(event) => setComplexity(calculateComplexity(event.target.value))} required />
             <Field label="English meaning" name="meaning" defaultValue={phrase?.meaning} />
             <Field label="Literal translation" name="literal" defaultValue={phrase?.literal} />
             <TextArea label="Why / etymology / context" name="why" defaultValue={phrase?.why} rows={6} />
@@ -28,7 +65,8 @@ export function ExpressionForm({ phrase, notice = {} }: { phrase?: Phrase; notic
             <div className="grid gap-5 sm:grid-cols-2"><Field label="Source" name="source" defaultValue={phrase?.source ?? "Personal"} /><Field label="Category" name="category" defaultValue={phrase?.category ?? "Expressions"} /></div>
             <div className="grid gap-5 sm:grid-cols-2"><SelectField label="Translation status" name="translationStatus" defaultValue={phrase?.translationStatus ?? "missing"} options={["missing", "partly_missing", "draft", "translated", "reviewed"]} /><SelectField label="Editorial review" name="reviewStatus" defaultValue={phrase?.reviewStatus ?? "unreviewed"} options={["unreviewed", "needs_review", "approved", "rejected"]} /></div>
             <TextArea label="Private admin notes" name="adminNotes" defaultValue={phrase?.adminNotes} rows={4} />
-            <div className="flex justify-end border-t border-[#1d4d58]/10 pt-6"><button className="rounded-full bg-[#15292d] px-7 py-3 font-semibold text-white hover:bg-[#1d4d58]">{isNew ? "Create expression" : "Save changes"}</button></div>
+            <div className="flex justify-end border-t border-[#1d4d58]/10 pt-6"><button disabled={navigationPending !== null} aria-busy={navigationPending !== null} className="rounded-full bg-[#15292d] px-7 py-3 font-semibold text-white hover:bg-[#1d4d58] disabled:cursor-wait disabled:opacity-60">{navigationPending ? "Loading expression…" : isNew ? "Create expression" : "Save changes"}</button></div>
+            </fieldset>
           </form>
         </section>
         <aside className="space-y-5">
@@ -36,8 +74,17 @@ export function ExpressionForm({ phrase, notice = {} }: { phrase?: Phrase; notic
           <section className="rounded-3xl border border-[#1d4d58]/15 bg-white/70 p-6"><p className="mono text-[10px] uppercase tracking-[.18em] text-[#78979c]">Record health</p><dl className="mt-5 space-y-3 text-sm"><Meta label="Translation" value={phrase?.translationStatus ?? "missing"} /><Meta label="Review" value={phrase?.reviewStatus ?? "unreviewed"} /><Meta label="Generated by" value={phrase?.translatedBy || "—"} /><Meta label="Reviews" value={String(phrase?.reviews ?? 0)} /><Meta label="Mastery" value={String(phrase?.mastery ?? 0)} /></dl></section>
         </aside>
       </div>
+      {leaveRequest && <div className="fixed inset-0 z-50 grid place-items-center bg-[#15292d]/60 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setLeaveRequest(null); }}><div className="w-full max-w-md rounded-[2rem] border border-[#1d4d58]/15 bg-[#f4f8f7] p-7 text-[#15292d] shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="unsaved-title"><p className="mono text-[10px] uppercase tracking-[.2em] text-[#78979c]">Unsaved changes</p><h2 id="unsaved-title" className="display mt-2 text-4xl">Leave this expression?</h2><p className="mt-4 text-sm leading-6 text-[#52747a]">Your edits have not been saved. If you leave now, those changes will be lost.</p><div className="mt-7 flex justify-end gap-3 border-t border-[#1d4d58]/10 pt-5"><button type="button" onClick={() => setLeaveRequest(null)} className="rounded-xl px-4 py-2 text-sm font-semibold text-[#52747a] hover:bg-[#d9eeec]">Stay</button><button type="button" onClick={() => { const request = leaveRequest; setLeaveRequest(null); startNavigation(request.href, request.direction); }} className="rounded-xl bg-[#15292d] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1d4d58]">Leave without saving</button></div></div></div>}
     </main>
   );
+}
+
+function ExpressionNavigation({ previousId, nextId, pending, onNavigate }: { previousId?: number; nextId?: number; pending: "previous" | "next" | null; onNavigate: (id?: number) => void }) {
+  return <div className="flex items-center gap-1"><button type="button" aria-label="Previous expression" title="Previous expression" onClick={() => onNavigate(previousId)} disabled={!previousId || pending !== null} className="grid h-10 w-10 place-items-center rounded-full border border-[#1d4d58]/20 text-lg text-[#1d4d58] hover:bg-[#d9eeec] disabled:cursor-wait disabled:opacity-25">{pending === "previous" ? <Spinner /> : "←"}</button><button type="button" aria-label="Next expression" title="Next expression" onClick={() => onNavigate(nextId)} disabled={!nextId || pending !== null} className="grid h-10 w-10 place-items-center rounded-full border border-[#1d4d58]/20 text-lg text-[#1d4d58] hover:bg-[#d9eeec] disabled:cursor-wait disabled:opacity-25">{pending === "next" ? <Spinner /> : "→"}</button></div>;
+}
+
+function Spinner() {
+  return <span aria-hidden="true" className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />;
 }
 
 function Field({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) { return <label className="block text-sm font-semibold">{label}<input {...props} className="mt-2 w-full rounded-xl border border-[#1d4d58]/20 bg-[#f9fbfa] px-4 py-3 font-normal outline-none focus:border-[#1d4d58] focus:ring-2 focus:ring-[#b7d86a]" /></label>; }
