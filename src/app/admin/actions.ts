@@ -41,10 +41,14 @@ async function saveAudioFile(id: number, file: File) {
   if (!file.size) return "";
   if (!audioExtensions[file.type]) throw new Error("Upload an MP3, WAV, OGG, WebM, or M4A audio file.");
   if (file.size > 15 * 1024 * 1024) throw new Error("Audio files must be smaller than 15 MB.");
+  return saveAudioBytes(id, Buffer.from(await file.arrayBuffer()), audioExtensions[file.type]);
+}
+
+async function saveAudioBytes(id: number, bytes: Buffer, extension = ".mp3") {
   const directory = path.join(process.cwd(), "public", "audio");
   await fs.mkdir(directory, { recursive: true });
-  const filename = `${id}-${randomUUID()}${audioExtensions[file.type]}`;
-  await fs.writeFile(path.join(directory, filename), Buffer.from(await file.arrayBuffer()));
+  const filename = `${id}-${randomUUID()}${extension}`;
+  await fs.writeFile(path.join(directory, filename), bytes);
   return `/audio/${filename}`;
 }
 
@@ -115,6 +119,39 @@ export async function unarchiveExpressionAction(id: number) {
   revalidatePath("/admin/archive");
   revalidatePath("/admin/statistics");
   return { ok: true };
+}
+
+export async function generateAudioAction(id: number) {
+  const apiKey = process.env.GOOGLE_TTS_API_KEY?.trim();
+  const phrase = getExpression(id);
+  if (!apiKey) return { ok: false, error: "GOOGLE_TTS_API_KEY is not configured." };
+  if (!phrase) return { ok: false, error: "Expression not found." };
+
+  try {
+    const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(apiKey)}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        input: { text: phrase.icelandic },
+        voice: { languageCode: "is-IS", ssmlGender: "NEUTRAL" },
+        audioConfig: { audioEncoding: "MP3" },
+      }),
+    });
+    const payload = await response.json() as { audioContent?: string; error?: { message?: string } };
+    if (!response.ok || !payload.audioContent) return { ok: false, error: payload.error?.message ?? "Google Text-to-Speech failed." };
+    const bytes = Buffer.from(payload.audioContent, "base64");
+    if (bytes.length > 15 * 1024 * 1024) return { ok: false, error: "Generated audio is larger than 15 MB." };
+    const audioUrl = await saveAudioBytes(id, bytes);
+    setExpressionAudio(id, audioUrl);
+    if (phrase.audioUrl && phrase.audioUrl !== audioUrl) await removeAudioFile(phrase.audioUrl);
+    revalidatePath("/");
+    revalidatePath("/admin");
+    revalidatePath(`/admin/${id}`);
+    revalidatePath("/admin/archive");
+    return { ok: true, audioUrl };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message.slice(0, 180) : "Google Text-to-Speech failed." };
+  }
 }
 
 export async function translateExpressionAction(formData: FormData) {

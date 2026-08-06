@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { archiveExpressionAction, translateExpressionsAction, translateOneExpressionAction, unarchiveExpressionAction } from "./actions";
+import { archiveExpressionAction, generateAudioAction, translateExpressionsAction, translateOneExpressionAction, unarchiveExpressionAction } from "./actions";
 import { ArchiveConfirmation } from "./archive-confirmation";
 import type { Phrase } from "@/lib/db";
 import type { TranslationField } from "@/lib/translation";
@@ -22,6 +22,11 @@ export function BulkExpressionTable({ phrases, returnTo, archived = false }: { p
   const [providerChoice, setProviderChoice] = useState<"openai" | "gemini" | null>(null);
   const [completed, setCompleted] = useState(0);
   const [failed, setFailed] = useState(0);
+  const [audioPending, setAudioPending] = useState(false);
+  const [audioCompleted, setAudioCompleted] = useState(0);
+  const [audioFailed, setAudioFailed] = useState(0);
+  const [audioConfirming, setAudioConfirming] = useState(false);
+  const [audioResult, setAudioResult] = useState<{ completed: number; failed: number } | null>(null);
   const [archivingId, setArchivingId] = useState<number | null>(null);
   const [confirming, setConfirming] = useState<{ id: number; phrase: string } | null>(null);
   const selectableCount = Math.min(phrases.length, selectionLimit);
@@ -67,6 +72,28 @@ export function BulkExpressionTable({ phrases, returnTo, archived = false }: { p
     router.replace(`${pathname}?${params.toString()}`);
   }
 
+  async function startAudioBatch() {
+    if (audioPending || pendingProvider || !selected.size) return;
+    setAudioConfirming(false);
+    setAudioPending(true);
+    setAudioResult(null);
+    setAudioCompleted(0);
+    setAudioFailed(0);
+    const ids = [...selected];
+    let completedCount = 0;
+    let failedCount = 0;
+    for (let offset = 0; offset < ids.length; offset += 3) {
+      const results = await Promise.all(ids.slice(offset, offset + 3).map((id) => generateAudioAction(id)));
+      completedCount += results.filter((result) => result.ok).length;
+      failedCount += results.filter((result) => !result.ok).length;
+      setAudioCompleted((count) => count + results.length);
+      setAudioFailed(failedCount);
+    }
+    setAudioPending(false);
+    setAudioResult({ completed: completedCount, failed: failedCount });
+    router.refresh();
+  }
+
   async function toggleArchive(id: number) {
     if (archivingId) return;
     setArchivingId(id);
@@ -93,10 +120,13 @@ export function BulkExpressionTable({ phrases, returnTo, archived = false }: { p
       </div>
       {selected.size > 0 && <div className="relative sticky bottom-4 z-10 mx-4 mb-4 mt-3 flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl bg-[#15292d] px-5 py-4 text-white shadow-[0_16px_45px_rgba(21,41,45,.28)]">
         <div><p className="font-semibold">{selected.size} expression{selected.size === 1 ? "" : "s"} selected</p><p className="mono mt-1 text-[9px] uppercase tracking-[.12em] text-white/45">Saved as drafts · human review required · maximum {selectionLimit}</p></div>
-        <div className="flex flex-wrap items-center gap-2"><button type="button" disabled={Boolean(pendingProvider)} onClick={() => setSelected(new Set())} className="rounded-xl px-4 py-2 text-sm text-white/65 hover:bg-white/10 hover:text-white disabled:opacity-40">Clear</button><TranslateButton provider="openai" pending={pendingProvider === "openai"} disabled={Boolean(pendingProvider)} onTranslate={() => setProviderChoice("openai")}>Translate with OpenAI</TranslateButton><TranslateButton provider="gemini" pending={pendingProvider === "gemini"} disabled={Boolean(pendingProvider)} onTranslate={() => setProviderChoice("gemini")}>Translate with Gemini</TranslateButton></div>
-        {pendingProvider && <BatchProgress count={selected.size} completed={completed} failed={failed} />}
+        <div className="flex flex-wrap items-center gap-2"><button type="button" disabled={Boolean(pendingProvider) || audioPending} onClick={() => setSelected(new Set())} className="rounded-xl px-4 py-2 text-sm text-white/65 hover:bg-white/10 hover:text-white disabled:opacity-40">Clear</button><TranslateButton provider="openai" pending={pendingProvider === "openai"} disabled={Boolean(pendingProvider) || audioPending} onTranslate={() => setProviderChoice("openai")}>Translate with OpenAI</TranslateButton><TranslateButton provider="gemini" pending={pendingProvider === "gemini"} disabled={Boolean(pendingProvider) || audioPending} onTranslate={() => setProviderChoice("gemini")}>Translate with Gemini</TranslateButton><button type="button" disabled={Boolean(pendingProvider) || audioPending} onClick={() => setAudioConfirming(true)} className="rounded-xl bg-[#b7d86a] px-4 py-2 text-sm font-semibold text-[#15292d] shadow-sm hover:bg-[#c6e57c] disabled:cursor-wait disabled:opacity-50">{audioPending ? "Generating audio…" : "Generate audio"}</button></div>
+        {pendingProvider && <BatchProgress count={selected.size} completed={completed} failed={failed} label="Translating" />}
+        {audioPending && <BatchProgress count={selected.size} completed={audioCompleted} failed={audioFailed} label="Generating audio" />}
+        {audioResult && !audioPending && <p className="absolute inset-x-5 bottom-1 text-right text-[10px] text-white/60">{audioResult.completed} audio file{audioResult.completed === 1 ? "" : "s"} generated{audioResult.failed ? ` · ${audioResult.failed} failed` : ""}</p>}
       </div>}
       {providerChoice && <BatchTranslationModal provider={providerChoice} onCancel={() => setProviderChoice(null)} onGenerate={(fields) => { const provider = providerChoice; setProviderChoice(null); void startBatch(provider, fields); }} />}
+      {audioConfirming && <BatchAudioConfirmation count={selected.size} onCancel={() => setAudioConfirming(false)} onConfirm={() => void startAudioBatch()} />}
       {confirming && <ArchiveConfirmation archived={archived} phrase={confirming.phrase} pending={archivingId !== null} onCancel={() => setConfirming(null)} onConfirm={() => void toggleArchive(confirming.id)} />}
     </form>
   );
@@ -119,9 +149,19 @@ function BatchTranslationModal({ provider, onCancel, onGenerate }: { provider: "
   </div>;
 }
 
-function BatchProgress({ count, completed, failed }: { count: number; completed: number; failed: number }) {
+function BatchProgress({ count, completed, failed, label }: { count: number; completed: number; failed: number; label: string }) {
   const percent = Math.round((completed / count) * 100);
-  return <div className="absolute inset-x-0 bottom-0 h-8 bg-white/10 px-5" role="progressbar" aria-label={`Translating ${count} selected expressions`} aria-valuemin={0} aria-valuemax={count} aria-valuenow={completed}><div className="flex h-full items-center gap-3"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#b7d86a] transition-[width] duration-300" style={{ width: `${percent}%` }} /></div><span className="mono min-w-20 text-right text-[10px] text-white/60">{completed}/{count} · {percent}%{failed ? ` · ${failed} failed` : ""}</span></div></div>;
+  return <div className="absolute inset-x-0 bottom-0 h-8 bg-white/10 px-5" role="progressbar" aria-label={`${label} ${count} selected expressions`} aria-valuemin={0} aria-valuemax={count} aria-valuenow={completed}><div className="flex h-full items-center gap-3"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#b7d86a] transition-[width] duration-300" style={{ width: `${percent}%` }} /></div><span className="mono min-w-20 text-right text-[10px] text-white/60">{completed}/{count} · {percent}%{failed ? ` · ${failed} failed` : ""}</span></div></div>;
+}
+
+function BatchAudioConfirmation({ count, onCancel, onConfirm }: { count: number; onCancel: () => void; onConfirm: () => void }) {
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#15292d]/60 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+    <div className="w-full max-w-lg rounded-[2rem] border border-[#1d4d58]/15 bg-[#f4f8f7] p-6 text-[#15292d] shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="batch-audio-modal-title">
+      <div className="flex items-start justify-between gap-5"><div><p className="mono text-[10px] uppercase tracking-[.18em] text-[#78979c]">Google Cloud Text-to-Speech</p><h2 id="batch-audio-modal-title" className="display mt-2 text-4xl">Generate pronunciation audio?</h2></div><button type="button" onClick={onCancel} aria-label="Close audio dialog" className="rounded-full px-3 py-1 text-2xl leading-none text-[#78979c] hover:bg-[#d9eeec]">×</button></div>
+      <p className="mt-4 text-sm leading-6 text-[#52747a]">Generate Icelandic MP3 audio for all <strong>{count}</strong> selected expressions. Existing recordings will be replaced and each request uses your Google Cloud quota.</p>
+      <div className="mt-7 flex justify-end gap-3 border-t border-[#1d4d58]/10 pt-5"><button type="button" onClick={onCancel} className="rounded-xl px-4 py-2 text-sm font-semibold text-[#52747a] hover:bg-[#d9eeec]">Cancel</button><button type="button" onClick={onConfirm} className="rounded-xl bg-[#15292d] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1d4d58]">Generate audio</button></div>
+    </div>
+  </div>;
 }
 
 function Status({ value }: { value: string }) { const active = value === "approved" || value === "reviewed"; const attention = value === "needs_review" || value === "draft" || value === "partly_missing"; return <span className={`mono inline-flex rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[.1em] ${active ? "bg-[#b7d86a]/35 text-[#1d4d58]" : attention ? "bg-amber-100 text-amber-800" : "bg-[#78979c]/10 text-[#78979c]"}`}>{value.replace("_", " ")}</span>; }

@@ -110,9 +110,9 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
                     <p className="text-xs text-white/55">Tap to turn ↗</p>
                   </div>
                 </article>
-                <article className="card-face card-back absolute inset-0 flex flex-col justify-between rounded-[2rem] border border-[#1d4d58]/15 bg-[#d9eeec] p-8 shadow-[0_25px_70px_-28px_rgba(21,41,45,.4)] sm:p-12">
+                <article className="card-face card-back absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[2rem] border border-[#1d4d58]/15 bg-[#d9eeec] p-8 shadow-[0_25px_70px_-28px_rgba(21,41,45,.4)] sm:p-12">
                   <div className="flex items-center justify-between gap-3"><span className="mono text-[10px] uppercase tracking-[.2em] text-[#1d4d58]">English notes</span><div className="flex flex-wrap justify-end gap-2"><span className="mono rounded-full border border-[#1d4d58]/15 px-2.5 py-1 text-[9px] uppercase tracking-[.14em] text-[#78979c]">Complexity · {phrase.complexity}</span><span className="mono rounded-full border border-[#1d4d58]/15 px-2.5 py-1 text-[9px] uppercase tracking-[.14em] text-[#78979c]">Source · {phrase.source}</span></div></div>
-                  <div className="space-y-4">
+                  <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-2">
                     <div><p className="mono text-[9px] uppercase tracking-[.18em] text-[#78979c]">Icelandic</p><p lang="is" className="display mt-1 text-xl font-medium leading-tight text-[#1d4d58] sm:text-2xl">{phrase.icelandic}</p></div>
                     <div><p className="mono text-[9px] uppercase tracking-[.18em] text-[#78979c]">Meaning</p><p className="display mt-1 text-3xl leading-tight text-[#15292d] sm:text-4xl">{phrase.meaning || "Translation not added yet"}</p></div>
                     <div><p className="mono text-[9px] uppercase tracking-[.18em] text-[#78979c]">Literal</p><p className="mt-1 text-sm font-semibold text-[#1d4d58]">{phrase.literal || "—"}</p></div>
@@ -156,6 +156,7 @@ export function FlashcardApp({ initialData }: { initialData: DashboardData }) {
 function AudioPlayButton({ audioUrl }: { audioUrl: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
+  const [slow, setSlow] = useState(false);
   function toggle(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     const audio = audioRef.current;
@@ -166,7 +167,13 @@ function AudioPlayButton({ audioUrl }: { audioUrl: string }) {
       audio.pause();
     }
   }
-  return <><button type="button" onClick={toggle} aria-label={playing ? "Pause Icelandic pronunciation" : "Play Icelandic pronunciation"} className="absolute right-7 top-7 z-20 inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#15292d]/65 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur transition hover:bg-[#15292d] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b7d86a] sm:right-10 sm:top-10"><span aria-hidden="true" className="text-sm">{playing ? "Ⅱ" : "▶"}</span>{playing ? "Pause" : "Listen"}</button><audio ref={audioRef} src={audioUrl} preload="metadata" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} /></>;
+  function toggleSpeed(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    const nextSlow = !slow;
+    setSlow(nextSlow);
+    if (audioRef.current) audioRef.current.playbackRate = nextSlow ? 0.7 : 1;
+  }
+  return <><div className="absolute right-7 top-7 z-20 flex items-center gap-2 sm:right-10 sm:top-10"><button type="button" onClick={toggleSpeed} aria-pressed={slow} aria-label={slow ? "Play Icelandic pronunciation at normal speed" : "Play Icelandic pronunciation at slow speed"} className={`rounded-full border px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b7d86a] ${slow ? "border-[#b7d86a] bg-[#b7d86a] text-[#15292d]" : "border-white/25 bg-[#15292d]/65 text-white hover:bg-[#15292d]"}`}>{slow ? "Slow" : "Normal"}</button><button type="button" onClick={toggle} aria-label={playing ? "Pause Icelandic pronunciation" : "Play Icelandic pronunciation"} className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#15292d]/65 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur transition hover:bg-[#15292d] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b7d86a]"><span aria-hidden="true" className="text-sm">{playing ? "Ⅱ" : "▶"}</span>{playing ? "Pause" : "Listen"}</button></div><audio ref={audioRef} src={audioUrl} preload="metadata" onPlay={() => { if (audioRef.current) audioRef.current.playbackRate = slow ? 0.7 : 1; setPlaying(true); }} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} /></>;
 }
 
 function Stat({ value, label }: { value: number; label: string }) {

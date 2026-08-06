@@ -260,7 +260,8 @@ export function getAdminExpressions(filters: AdminFilters) {
     const query = `%${queryText}%`;
     values.push(query, query, query, query);
   }
-  if (filters.translationStatus) { clauses.push("translation_status = ?"); values.push(filters.translationStatus); }
+  if (filters.translationStatus === "without_audio") clauses.push("(audio_url = '' OR audio_url IS NULL)");
+  else if (filters.translationStatus) { clauses.push("translation_status = ?"); values.push(filters.translationStatus); }
   if (filters.reviewStatus) { clauses.push("review_status = ?"); values.push(filters.reviewStatus); }
   if (filters.level) { clauses.push("level = ?"); values.push(filters.level); }
   clauses.push(filters.archived ? "archived_at != ''" : "archived_at = ''");
