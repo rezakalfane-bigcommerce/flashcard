@@ -42,6 +42,12 @@ export function FlashcardApp({ initialData, canChangeLevel = false }: { initialD
         event.preventDefault();
         setFlipped((value) => !value);
       }
+      if (event.code === "Escape" && !quizMode) {
+        setFlipped(false);
+      }
+      if (event.code === "Enter" && !quizMode) {
+        setFlipped(true);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
