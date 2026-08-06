@@ -268,3 +268,28 @@ All notable changes and repository commits are documented here. This project fol
 ### `fix: keep account menu visible while pending`
 
 - Shows the Clerk account menu on the approval-pending screen so users can sign out or switch accounts.
+### `feat: adaptive quiz and modal keyboard controls`
+
+- Closes all application modals with Escape, while protecting destructive saves in progress.
+- Shows each answer's literal translation as a quiz subtitle.
+- Uses the active phrase count for level progress and naturally sizes quizzes to available expressions.
+
+### `fix: show transition and audio progress`
+
+- Adds pending feedback to the quiz level transition button.
+- Stops and rewinds pronunciation audio when the visible card or quiz question changes.
+
+### `fix: preserve audio while revealing notes`
+
+- Keeps pronunciation playing while flipping a card.
+- Resets playback only when moving to another expression or quiz question.
+
+### `refactor: centralize expression creation`
+
+- Removes the duplicate dashboard Add phrase action.
+- Keeps expression creation available through Admin → New expression.
+
+### `fix: remove conflicting edit form encoding`
+
+- Removes the explicit `encType` from the function-action expression form.
+- Preserves multipart file submission through React’s Server Action handling.

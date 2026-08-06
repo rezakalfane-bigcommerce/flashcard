@@ -3,12 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { generateAudioAction } from "./actions";
+import { useEscapeKey } from "@/components/use-escape-key";
 
 export function AudioGenerationControl({ id, phrase, hasAudio }: { id: number; phrase: string; hasAudio: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
+  useEscapeKey(() => setOpen(false), open && !isPending);
 
   function generate() {
     setError("");

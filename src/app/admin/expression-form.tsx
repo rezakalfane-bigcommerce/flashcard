@@ -17,7 +17,7 @@ export function ExpressionForm({ phrase, notice = {} }: { phrase?: Phrase; notic
         <section className="rounded-3xl border border-[#1d4d58]/15 bg-white p-6 shadow-sm sm:p-8">
           {(notice.saved || notice.created || notice.generated) && <p className="mb-6 rounded-xl bg-[#b7d86a]/25 px-4 py-3 text-sm font-semibold">{notice.generated ? `Draft generated with ${notice.generated}. Review before approving.` : "Expression saved."}</p>}
           {notice.error && <p className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">{notice.error}</p>}
-          <form action={isNew ? createExpressionAction : saveExpressionAction} encType="multipart/form-data" className="space-y-5">
+          <form action={isNew ? createExpressionAction : saveExpressionAction} className="space-y-5">
             {phrase && <input type="hidden" name="id" value={phrase.id} />}
             {phrase && <input type="hidden" name="audioUrl" value={phrase.audioUrl} />}
             <Field label="Icelandic expression" name="icelandic" defaultValue={phrase?.icelandic} required />

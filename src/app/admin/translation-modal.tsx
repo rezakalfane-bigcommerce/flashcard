@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { translateExpressionAction } from "./actions";
 import type { TranslationField, TranslationProvider } from "@/lib/translation";
+import { useEscapeKey } from "@/components/use-escape-key";
 
 const fields: Array<{ id: TranslationField; label: string; description: string }> = [
   { id: "meaning", label: "Meaning", description: "Natural English equivalent" },
@@ -14,6 +15,7 @@ const fields: Array<{ id: TranslationField; label: string; description: string }
 export function TranslationModal({ id, missingFields }: { id: number; missingFields: TranslationField[] }) {
   const [provider, setProvider] = useState<TranslationProvider | null>(null);
   const defaults = missingFields.length ? missingFields : fields.map((field) => field.id);
+  useEscapeKey(() => setProvider(null), provider !== null);
   return <>
     <div className="grid gap-3"><button type="button" onClick={() => setProvider("openai")} className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15">Translate with OpenAI</button><button type="button" onClick={() => setProvider("gemini")} className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15">Translate with Gemini</button></div>
     {provider && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#15292d]/60 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setProvider(null); }}>

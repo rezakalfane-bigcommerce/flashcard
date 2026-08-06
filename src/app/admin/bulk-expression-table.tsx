@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { archiveExpressionAction, generateAudioAction, translateExpressionsAction, translateOneExpressionAction, unarchiveExpressionAction } from "./actions";
+import { useEscapeKey } from "@/components/use-escape-key";
 import { ArchiveConfirmation } from "./archive-confirmation";
 import type { Phrase } from "@/lib/db";
 import type { TranslationField } from "@/lib/translation";
@@ -138,6 +139,7 @@ function TranslateButton({ children, pending, disabled, onTranslate }: { provide
 
 function BatchTranslationModal({ provider, onCancel, onGenerate }: { provider: "openai" | "gemini"; onCancel: () => void; onGenerate: (fields: TranslationField[]) => void }) {
   const [fields, setFields] = useState<TranslationField[]>(translationFields.map((field) => field.id));
+  useEscapeKey(onCancel);
   function toggle(field: TranslationField) { setFields((current) => current.includes(field) ? current.filter((item) => item !== field) : [...current, field]); }
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#15292d]/60 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
     <div className="w-full max-w-lg rounded-[2rem] border border-[#1d4d58]/15 bg-[#f4f8f7] p-6 text-[#15292d] shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="batch-translation-modal-title">
@@ -155,6 +157,7 @@ function BatchProgress({ count, completed, failed, label }: { count: number; com
 }
 
 function BatchAudioConfirmation({ count, onCancel, onConfirm }: { count: number; onCancel: () => void; onConfirm: () => void }) {
+  useEscapeKey(onCancel);
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#15292d]/60 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
     <div className="w-full max-w-lg rounded-[2rem] border border-[#1d4d58]/15 bg-[#f4f8f7] p-6 text-[#15292d] shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="batch-audio-modal-title">
       <div className="flex items-start justify-between gap-5"><div><p className="mono text-[10px] uppercase tracking-[.18em] text-[#78979c]">Google Cloud Text-to-Speech</p><h2 id="batch-audio-modal-title" className="display mt-2 text-4xl">Generate pronunciation audio?</h2></div><button type="button" onClick={onCancel} aria-label="Close audio dialog" className="rounded-full px-3 py-1 text-2xl leading-none text-[#78979c] hover:bg-[#d9eeec]">×</button></div>
