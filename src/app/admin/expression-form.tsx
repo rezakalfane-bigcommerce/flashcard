@@ -58,7 +58,7 @@ export function ExpressionForm({ phrase, notice = {}, navigation = {} }: { phras
             {phrase && <input type="hidden" name="id" value={phrase.id} />}
             {phrase && <input type="hidden" name="audioUrl" value={phrase.audioUrl} />}
             <Field label="Icelandic expression" name="icelandic" defaultValue={phrase?.icelandic} onChange={(event) => setComplexity(calculateComplexity(event.target.value))} required />
-            <Field label="English meaning" name="meaning" defaultValue={phrase?.meaning} />
+            <Field label="Equivalent English Idiom" name="meaning" defaultValue={phrase?.meaning} />
             <Field label="Literal translation" name="literal" defaultValue={phrase?.literal} />
             <TextArea label="Why / etymology / context" name="why" defaultValue={phrase?.why} rows={6} />
             <AudioField audioUrl={phrase?.audioUrl} id={phrase?.id} phrase={phrase?.icelandic} />
