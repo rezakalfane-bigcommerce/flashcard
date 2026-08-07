@@ -82,7 +82,7 @@ export default async function StatisticsPage() {
             <p className="mono text-[10px] uppercase tracking-[.18em] text-[#78979c]">Field health</p>
             <h2 className="display mt-1 text-3xl">Translation completeness</h2>
             <div className="mt-7 space-y-5">
-              <Completion label="English meaning" count={stats.completeness.meaning} total={stats.total} />
+              <Completion label="Equivalent English Idiom" count={stats.completeness.meaning} total={stats.total} />
               <Completion label="Literal translation" count={stats.completeness.literal} total={stats.total} />
               <Completion label="Etymology / context" count={stats.completeness.why} total={stats.total} />
             </div>
