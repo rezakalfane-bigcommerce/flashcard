@@ -308,3 +308,25 @@ All notable changes and repository commits are documented here. This project fol
 ### `fix: lock editor during navigation`
 
 - Disables editor fields, Save changes, and Archive while navigating between expressions.
+
+### `feat: localize player interface`
+
+- Adds English and French player locale JSON files grouped by component.
+- Localizes the flashcard, quiz, review, notebook, level, and audio controls.
+- Adds a persistent French/English player language selector while leaving admin pages unchanged.
+
+### `ui: add flags to player language selector`
+
+- Adds French and English flag labels to the player locale dropdown.
+
+### `ui: improve locale dropdown spacing`
+
+- Adds right padding to separate the native select arrow from the language label.
+
+### `ui: position locale dropdown chevron`
+
+- Uses a custom positioned chevron for predictable right-side spacing across browsers.
+
+### `ui: align locale dropdown chevron`
+
+- Uses a geometric border chevron for improved vertical alignment with the language label.

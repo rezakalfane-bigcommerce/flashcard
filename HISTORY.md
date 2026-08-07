@@ -851,3 +851,59 @@ The prompt supplied 159 expressions with English meanings and context notes.
 
 - Disables Save changes, Archive, and all form fields while a previous/next expression is loading.
 - Keeps the active navigation spinner visible until the route transition completes.
+
+## 2026-08-07 — Localize the player interface
+
+### Prompts
+
+> Big phase: I'd like to internationalize the interface. We can ignore the admin pages for now and internationalize and translate the full player page (flashcard and quiz) in French (json file), with extra langauges to come
+
+> you can organize strings in the json files by components
+
+### Summary
+
+- Added English and French player locale JSON files.
+- Localized flashcards, review controls, notebook, audio controls, level controls, and quiz mode.
+- Added a persistent French/English selector for the player page.
+- Grouped locale strings by component so additional languages can be added consistently.
+
+## 2026-08-07 — Improve language selector
+
+### Prompt
+
+> language selector could look a little bit better with flags
+
+### Summary
+
+- Added French and English flag labels to the player language selector.
+
+## 2026-08-07 — Add language selector arrow spacing
+
+### Prompt
+
+> the dropdown icon needs some spacing on the right
+
+### Summary
+
+- Increased right padding on the locale dropdown so its native arrow has more breathing room.
+
+## 2026-08-07 — Position locale dropdown arrow explicitly
+
+### Prompt
+
+> the spacing is needed on the right of the arrow, not left
+
+### Summary
+
+- Replaced the browser-controlled select arrow with a positioned chevron.
+- Added consistent right-side spacing and preserved keyboard focus behavior.
+
+## 2026-08-07 — Align locale dropdown chevron
+
+### Prompt
+
+> the arrow should be aligned vertically with the text
+
+### Summary
+
+- Replaced the text glyph with a geometric CSS chevron centered against the selector text.

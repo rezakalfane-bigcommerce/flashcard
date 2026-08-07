@@ -1,0 +1,80 @@
+{
+  "header": {
+    "language": "Langue",
+    "languageName": "Français",
+    "brandTagline": "L'islandais, en mémoire",
+    "admin": "Administration",
+    "previousLevel": "Niveau précédent",
+    "nextLevel": "Niveau suivant",
+    "adminTesting": "test administrateur"
+  },
+  "level": {
+    "counter": "Niveau {{current}} / {{total}}",
+    "progressing": "{{mastered}} sur {{total}} en progression",
+    "adminControls": "contrôles administrateur",
+    "quizThisLevel": "Quiz de ce niveau",
+    "todayPractice": "Exercice du jour"
+  },
+  "card": {
+    "expressionLabel": "Expression islandaise",
+    "complexity": "Complexité",
+    "source": "Source",
+    "englishNotes": "Notes en anglais",
+    "icelandic": "Islandais",
+    "meaning": "Sens",
+    "literal": "Traduction littérale",
+    "why": "Pourquoi",
+    "translationMissing": "Traduction non ajoutée",
+    "tapToTurn": "Touchez pour retourner ↗",
+    "tapToSeeAgain": "Touchez pour revoir l'expression",
+    "direction": "IS → EN",
+    "notAvailable": "—"
+  },
+  "review": {
+    "stillLearning": "Encore à apprendre",
+    "remembered": "Je m'en souviens",
+    "saving": "Enregistrement…"
+  },
+  "notebook": {
+    "title": "Votre carnet",
+    "phrasesSeen": "expressions vues",
+    "mastered": "maîtrisées",
+    "reviews": "révisions",
+    "dailyTitle": "Un peu chaque jour",
+    "dailyHint": "Révélez le sens, puis indiquez ce qui est acquis. Les expressions difficiles reviennent en priorité."
+  },
+  "audio": {
+    "slow": "Lent",
+    "normal": "Normal",
+    "listen": "Écouter",
+    "pause": "Pause",
+    "playNormal": "Écouter la prononciation islandaise à vitesse normale",
+    "playSlow": "Écouter la prononciation islandaise au ralenti",
+    "play": "Écouter la prononciation islandaise",
+    "pauseLabel": "Mettre en pause la prononciation islandaise"
+  },
+  "quiz": {
+    "levelTitle": "Quiz du niveau {{level}}",
+    "questionOf": "Question {{current}} sur {{total}}",
+    "exit": "Quitter le quiz",
+    "prompt": "Que signifie cette expression ?",
+    "correct": "Correct.",
+    "answerIs": "La réponse est « {{answer}} ». ",
+    "next": "Question suivante →",
+    "score": "Voir le score",
+    "complete": "Quiz du niveau {{level}} terminé",
+    "ofCorrect": "{{score}} réponse(s) correcte(s) sur {{total}}",
+    "passed": "Niveau réussi",
+    "keepPracticing": "Continuez à pratiquer",
+    "nextUnlocked": "Vous avez obtenu au moins 80 % : le niveau suivant est débloqué.",
+    "finalPassed": "Vous avez obtenu au moins 80 % au dernier niveau.",
+    "needToPass": "Il faut obtenir 80 % pour réussir. Révisez les cartes et réessayez le quiz.",
+    "back": "Retour aux cartes",
+    "retry": "Réessayer",
+    "continue": "Passer au niveau {{level}} →",
+    "loading": "Chargement du niveau…",
+    "notEnough": "Ce niveau ne contient pas encore assez d'expressions pour un quiz.",
+    "translationMissing": "Traduction non ajoutée",
+    "literalMissing": "Traduction littérale non ajoutée"
+  }
+}

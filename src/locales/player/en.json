@@ -1,0 +1,80 @@
+{
+  "header": {
+    "language": "Language",
+    "languageName": "English",
+    "brandTagline": "Icelandic, remembered",
+    "admin": "Admin",
+    "previousLevel": "Previous level",
+    "nextLevel": "Next level",
+    "adminTesting": "Admin testing"
+  },
+  "level": {
+    "counter": "Level {{current}} / {{total}}",
+    "progressing": "{{mastered}} of {{total}} progressing",
+    "adminControls": "admin controls",
+    "quizThisLevel": "Quiz this level",
+    "todayPractice": "Today's practice"
+  },
+  "card": {
+    "expressionLabel": "Icelandic expression",
+    "complexity": "Complexity",
+    "source": "Source",
+    "englishNotes": "English notes",
+    "icelandic": "Icelandic",
+    "meaning": "Meaning",
+    "literal": "Literal",
+    "why": "Why",
+    "translationMissing": "Translation not added yet",
+    "tapToTurn": "Tap to turn ↗",
+    "tapToSeeAgain": "Tap to see the phrase again",
+    "direction": "IS → EN",
+    "notAvailable": "—"
+  },
+  "review": {
+    "stillLearning": "Still learning",
+    "remembered": "I remembered",
+    "saving": "Saving…"
+  },
+  "notebook": {
+    "title": "Your notebook",
+    "phrasesSeen": "phrases seen",
+    "mastered": "mastered",
+    "reviews": "reviews",
+    "dailyTitle": "A little every day",
+    "dailyHint": "Reveal the meaning, then mark what stuck. Difficult phrases circle back first."
+  },
+  "audio": {
+    "slow": "Slow",
+    "normal": "Normal",
+    "listen": "Listen",
+    "pause": "Pause",
+    "playNormal": "Play Icelandic pronunciation at normal speed",
+    "playSlow": "Play Icelandic pronunciation at slow speed",
+    "play": "Play Icelandic pronunciation",
+    "pauseLabel": "Pause Icelandic pronunciation"
+  },
+  "quiz": {
+    "levelTitle": "Level {{level}} quiz",
+    "questionOf": "Question {{current}} of {{total}}",
+    "exit": "Exit quiz",
+    "prompt": "What does this mean?",
+    "correct": "Correct.",
+    "answerIs": "The answer is “{{answer}}”.",
+    "next": "Next question →",
+    "score": "See score",
+    "complete": "Level {{level}} quiz complete",
+    "ofCorrect": "{{score}} of {{total}} correct",
+    "passed": "Level passed",
+    "keepPracticing": "Keep practicing",
+    "nextUnlocked": "You scored at least 80%, so the next level is unlocked.",
+    "finalPassed": "You scored at least 80% on the final level.",
+    "needToPass": "You need 80% to pass. Review the cards and try the quiz again.",
+    "back": "Back to cards",
+    "retry": "Try again",
+    "continue": "Continue to level {{level}} →",
+    "loading": "Loading level…",
+    "notEnough": "This level does not have enough expressions for a quiz yet.",
+    "translationMissing": "Translation not added yet",
+    "literalMissing": "Literal translation not added yet"
+  }
+}
